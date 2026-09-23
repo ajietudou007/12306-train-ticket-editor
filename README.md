@@ -24,6 +24,14 @@
 
 ---
 
+## ✨ 界面展示
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/00f19c8f-0337-42f3-8181-6b6eff6e76e9" />
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/32f16c4b-a511-4ceb-bf87-cd715dfea3c6" />
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/2d390022-e6de-46ce-8905-756343cb156f" />
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/8f965b93-b55a-4cad-a58f-8964ea6b7dbf" />
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/cffa1091-ff5c-4a35-bc2b-4d8e4bd10fc8" />
+<img width="3360" height="1932" alt="image" src="https://github.com/user-attachments/assets/c7fedcb4-0a13-48d6-af86-492c09e5f571" />
+
 ## ✨ 功能特性
 
 - **六款票面底图**：蓝票 / 蓝纸票 / 蓝磁票 / 红票 / 红纸票 / 红磁票，正面与背面独立选用，底图全部内嵌（Base64），离线可用
