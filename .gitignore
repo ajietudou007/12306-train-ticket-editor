@@ -1,0 +1,31 @@
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ===== Windows =====
+Thumbs.db
+Desktop.ini
+
+# ===== 编辑器 / IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== 备份与临时文件 =====
+*.zip
+*.bak
+*.tmp
+*~
+
+# ===== 日志 =====
+*.log
+
+# ===== Node（仅本地服务可选使用）=====
+node_modules/
+package-lock.json
+
+# ===== 本地测试产物 =====
+test-output/
