@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V5.7</title>
+<title>12306火车票票根编辑器V5.8</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -1418,6 +1418,8 @@ body::after {
   white-space: nowrap;
 }
 .btn-mini .ic { width: 12px; height: 12px; }
+/* V5.8：PDF 卡片标题行「跳转PDF官方下载」为外链 a 元素，复用 .btn/.btn-mini 并修正 a 默认样式 */
+a.btn.btn-mini { text-decoration: none; -webkit-user-select: none; user-select: none; }
 .btn-mini-danger {
   color: var(--danger);
   border-color: rgba(242,89,94,0.45);
@@ -2412,8 +2414,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.7</h1>
-        <p>阿杰同学 · V5.7 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.8</h1>
+        <p>阿杰同学 · V5.8 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2499,7 +2501,8 @@ window.__exportProgress = (function(){
             <div class="icon" data-page-node-id="CJClhT83AGYnDe8C6mPKOs"><svg class="ic" aria-hidden="true"><use href="#i-pdf"/></svg></div>
             <span class="sec-no">02</span>
             <h2 data-page-node-id="Ds9FvRXiYawe6rwpv8I6Db">PDF 行程导入</h2>
-            <div class="header-meta"></div>
+            <!-- V5.8：标题行右侧外链按钮，前往 12306 官网下载行程 PDF（新标签打开，不离开编辑器） -->
+            <div class="header-meta"><a class="btn btn-mini" id="pdfGoOfficial" href="https://www.12306.cn/" target="_blank" rel="noopener noreferrer" title="前往 12306 官网（www.12306.cn）下载「行程信息提示」PDF"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>跳转PDF官方下载</a></div>
           </div>
           <input type="file" id="pdfFile" accept="application/pdf" multiple class="pdf-input" data-page-node-id="X7REq3F2EA0anAEo71NSdP">
           <div class="pdf-flex">
@@ -7358,6 +7361,10 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V5.8</b><span>2026-09-25</span></div>
+      <ul>
+        <li><b>新增</b> 「PDF 行程导入」卡片标题行右侧新增「跳转PDF官方下载」按钮：点击在新标签页打开 12306 官网（www.12306.cn），方便前往官方渠道下载「行程信息提示」PDF，无需离开编辑器；按钮复用现有 btn-mini 外观（含下载图标与悬停效果），不改变原布局与交互。</li>
+      </ul>
       <div class="cl-ver"><b>V5.7</b><span>2026-09-25</span></div>
       <ul>
         <li><b>新增</b> 模块级字体自定义：细节调整悬浮窗新增「字体」行（粗细行下方），可为每个模块单独选择字体——内置 Arial、微软雅黑、宋体、黑体、Times New Roman 五种常见字体（含 macOS / Windows 回退链），或选回「默认（跟随票面）」恢复原字体；二维码与虚线框模块无文字，自动隐藏该行。模块字体按底图（票种）独立记忆，与位置 / 字号 / 间距 / 粗细一样随行程持久化，可一键重置。</li>
