@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.2</title>
+<title>12306火车票票根编辑器V6.2.3</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2511,8 +2511,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.2</h1>
-        <p>阿杰同学 · V6.2.2 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.3</h1>
+        <p>阿杰同学 · V6.2.3 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2630,29 +2630,21 @@ window.__exportProgress = (function(){
             <div class="icon"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></div>
             <span class="sec-no">03</span>
             <h2>纸质票扫描识别</h2>
-            <div class="header-meta">
-              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：超精度 = PP-OCRv6 深度学习模型（PaddleOCR 最新一代，首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网·OCR.space = 免费云识别；联网·百度 = 百度智能云（需自建应用 Key，标准版免费 500 次/日）。联网引擎仅在明确选择并确认后才联网">
-                <option value="paddleV6">超精度引擎</option>
-                <option value="paddle">高精度引擎</option>
-                <option value="tesseract">轻量引擎</option>
-                <option value="cloud">联网引擎（OCR.space）</option>
-                <option value="cloudBaidu">联网引擎（百度）</option>
-              </select>
-              <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
-            </div>
+            <!-- V6.2.3：引擎选择移入识别悬浮窗（一级界面只管添加/清除） -->
           </div>
           <input type="file" id="ocrFile" accept="image/*,.heic,.heif,.avif,.tif,.tiff" multiple class="ocr-input">
           <!-- V6.2.2：卡片布局沿用 V6.2.1 的 PDF 风格（拖放区+按钮列+状态条）；
                点击/拖入链路加固——统一 pickFiles() 入口（即时反馈+click 兜底）、
-               filesFromDrop()（items 兜底）、addFiles 扩展识别格式并输出明确格式错误提示 -->
+               filesFromDrop()（items 兜底）、addFiles 扩展识别格式并输出明确格式错误提示
+               V6.2.3：删除「开始识别」按钮——添加成功即自动弹出识别窗口，
+               矫正/裁剪在窗口内进行，用户点窗口内「开始识别」才识别 -->
           <div class="pdf-flex">
             <div class="pdf-zone ocr-zone-card" id="ocrCardZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
               <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
-              <div class="pdf-hint">点击或拖入 <strong>纸质火车票照片</strong><br>添加后自动矫正与标准票幅裁剪</div>
+              <div class="pdf-hint">点击或拖入 <strong>纸质火车票照片</strong><br>添加成功后自动弹出识别窗口（矫正 · 裁剪 · 识别）</div>
             </div>
             <div class="pdf-btns">
               <button class="btn btn-add" id="ocrCardAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
-              <button class="btn-run btn-extract" id="ocrCardRun" disabled>开始识别</button>
               <button class="btn btn-mini ocr-card-clear" id="ocrCardClear" type="button" title="清除当前已导入的全部照片与识别结果（已生成的行程不受影响）"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清除已导入图片</button>
             </div>
           </div>
@@ -7964,6 +7956,20 @@ $("bmExportModeSeg").addEventListener("click", function(e){
         <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
       </div>
     </div>
+    <!-- V6.2.3：识别引擎选择移入悬浮窗（原一级界面卡片标题行）；默认 Agnes 3.0 Flash
+         视觉大模型识别（精度最高），本地引擎照片不出设备，联网引擎仅明确确认后才联网 -->
+    <div class="ocr-cloud-row" id="ocrEngineRow">
+      <label for="ocrEngineSel">识别引擎</label>
+      <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：AI·Agnes 3.0 Flash = 视觉大模型直接读取票面（精度最高，联网）；超精度 = PP-OCRv6 深度学习模型（首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网·OCR.space = 免费云识别；联网·百度 = 百度智能云（需自建应用 Key，标准版免费 500 次/日）。联网引擎仅在明确选择并确认后才联网">
+        <option value="agnes">AI 识别引擎（Agnes 3.0 Flash）</option>
+        <option value="paddleV6">超精度引擎（本地）</option>
+        <option value="paddle">高精度引擎（本地）</option>
+        <option value="tesseract">轻量引擎（本地）</option>
+        <option value="cloud">联网引擎（OCR.space）</option>
+        <option value="cloudBaidu">联网引擎（百度）</option>
+      </select>
+      <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
+    </div>
     <!-- V6.2：联网引擎（OCR.space）API Key 配置行——仅在引擎下拉选择「联网引擎」时显示；
          免费额度有限，建议注册自己的免费 Key（不填则用公共体验 Key，限 10 次/10 分钟） -->
     <div class="ocr-cloud-row" id="ocrCloudRow" hidden>
@@ -7980,6 +7986,13 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <input type="text" id="ocrBaiduSecret" placeholder="Secret Key" autocomplete="off" spellcheck="false">
       <button class="btn btn-mini" id="ocrBaiduSave" type="button" title="保存到本机浏览器（不上传）">保存</button>
       <a class="ocr-cloud-link" href="https://console.bce.baidu.com/ai/?_=1758774408291#/ai/ocr/app/list" target="_blank" rel="noopener noreferrer">免费领取</a>
+    </div>
+    <!-- V6.2.3：Agnes API Key 配置行（内置体验 Key，可替换为自有 Key；仅本机存储） -->
+    <div class="ocr-cloud-row" id="ocrAgnesRow" hidden>
+      <label for="ocrAgnesKey">Agnes</label>
+      <input type="text" id="ocrAgnesKey" placeholder="Agnes API Key" autocomplete="off" spellcheck="false">
+      <button class="btn btn-mini" id="ocrAgnesSave" type="button" title="保存 Key 到本机浏览器（不上传）">保存</button>
+      <a class="ocr-cloud-link" href="https://www.agnes-ai.cn/" target="_blank" rel="noopener noreferrer">获取 Key</a>
     </div>
     <div class="ocr-list" id="ocrList" hidden></div>
     <div class="ocr-actions-bar" id="ocrActions" hidden>
@@ -7998,6 +8011,13 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.3</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>新增</b> <b>AI 识别引擎（Agnes 3.0 Flash）</b>并设为默认：视觉大模型直接「看」票面照片输出逐行文字，对歪斜、模糊、小字的理解能力远超传统「检测-识别」两级 OCR 管线，识别精度大幅提升。OpenAI 兼容接口接入，内置体验 Key 开箱即用，也可在识别窗口内替换为自有 Key（仅存本机）；识别时照片将上传 Agnes 云端——仅在明确选择并确认后才联网，云端失败自动回退本地引擎。</li>
+        <li><b>调整</b> 纸质票扫描识别<b>操作流程</b>：一级界面「图片识别」卡片只保留<b>「添加」与「清除已导入图片」</b>两个按钮（删除「开始识别」）——照片<b>添加成功后自动弹出识别悬浮窗</b>，透视矫正与标准票幅裁剪在窗内即时进行，用户确认后点窗内「开始识别」才开始识别，流程更符合直觉。</li>
+        <li><b>调整</b> <b>识别引擎选择移入识别悬浮窗</b>（原一级界面卡片标题行）：引擎下拉新增「AI 识别引擎（Agnes 3.0 Flash）」，本地引擎（超精度/高精度/轻量）与联网引擎（OCR.space/百度）照旧可选，切换确认与回退逻辑不变。</li>
+        <li><b>优化</b> AI 引擎跳过本地多角度方向探测：视觉大模型自带旋转转正理解能力，由提示词指示其按正置票面转录——每张照片只上传一次（原方向探测需 2~4 次完整云端上传），更快也更省流量。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.2</b><span>2026-09-26</span></div>
       <ul>
         <li><b>修复</b> 导入纸质火车票时<b>「点击添加 / 拖入没有反应」</b>：根因是 OCR 模块脚本内 <code>refreshEngineChip()</code> 初始化调用早于其依赖的 <code>PADDLE_VARIANTS</code> 常量定义，加载即抛 <b>TypeError</b>，导致同一脚本块内其后代码全部中断——<b>添加按钮 / 拖放区 / 文件选择的所有事件监听从未挂载</b>（V6.2.1 起引入）。现初始化调用移至常量定义之后并加 try/catch 兜底，初始化异常绝不再阻断模块装配。</li>
@@ -8781,10 +8801,11 @@ const zone = $("ocrZone"), fileInput = $("ocrFile"), listEl = $("ocrList"),
     engineChip = $("ocrEngineChip"),
     engineSel = $("ocrEngineSel");
 
-/* V6.2：引擎选择持久化（白名单），默认超精度（PP-OCRv6）；
+/* V6.2.3：引擎选择持久化（白名单），默认 AI 识别引擎（Agnes 3.0 Flash，精度最高）；
    联网引擎仅在用户明确选择并确认后才启用，取消则回退本地引擎 */
 var cloudConfirmed = false, lastLocalPref = "paddleV6";
 var ENGINE_MSGS = {
+    agnes: "已切换为 AI 识别引擎（Agnes 3.0 Flash）：识别时票据照片将上传 Agnes 云端，由视觉大模型直接读取票面文字与字段，精度最高",
     paddleV6: "已切换为超精度引擎（PP-OCRv6）：中文识别最准，首次使用需联网下载约 30MB 模型，之后可离线",
     paddle: "已切换为高精度引擎（PP-OCRv5）：首次使用需联网下载约 16MB 模型，之后可离线",
     tesseract: "已切换为轻量引擎（Tesseract）：模型约 25MB，速度与精度均衡",
@@ -8797,7 +8818,8 @@ var ENGINE_MSGS = {
 function refreshEngineChip(){
     if(!engineChip) return;
     var pref = getOcrEnginePref(), txt = "";
-    if(pref === "cloud") txt = "OCR.space·云";
+    if(pref === "agnes") txt = "Agnes·AI识别";
+    else if(pref === "cloud") txt = "OCR.space·云";
     else if(pref === "cloudBaidu") txt = "百度OCR·云";
     else if(pref === "tesseract") txt = "Tesseract·轻量";
     else if(PADDLE_VARIANTS && PADDLE_VARIANTS[pref]) txt = PADDLE_VARIANTS[pref].chip;   // V6.2.2：防御未定义（定义在脚本后段，早期调用时为 undefined）
@@ -8808,12 +8830,12 @@ function refreshEngineChip(){
 if(engineSel){
     var savedPref = getOcrEnginePref();
     engineSel.value = savedPref;
-    if(savedPref !== "cloud") lastLocalPref = savedPref;
+    if(savedPref !== "cloud" && savedPref !== "cloudBaidu" && savedPref !== "agnes") lastLocalPref = savedPref;   // V6.2.3：仅本地引擎回写（联网引擎取消时回退本地）
     engineSel.addEventListener("change", function(){
         var v = engineSel.value;
-        if(v === "cloud" || v === "cloudBaidu"){
+        if(v === "cloud" || v === "cloudBaidu" || v === "agnes"){
             /* V6.2.1：每次选择联网引擎都重新确认（照片要上传，不能让旧确认长期生效） */
-            var engName = v === "cloud" ? "OCR.space" : "百度智能云（百度 OCR）";
+            var engName = v === "cloud" ? "OCR.space" : (v === "agnes" ? "Agnes 3.0 Flash（AI 识别）" : "百度智能云（百度 OCR）");
             var ok = false;
             try{ ok = window.confirm("启用联网引擎（" + engName + "）？票据照片将上传至云端服务器识别；除该引擎外，本应用所有功能均不上传任何数据。确定启用吗？（取消则保持本地引擎）"); }catch(e){ ok = false; }
             if(!ok){
@@ -8825,7 +8847,7 @@ if(engineSel){
                 return;
             }
             cloudConfirmed = true;
-        }else if(v !== "cloud" && v !== "cloudBaidu"){
+        }else if(v !== "cloud" && v !== "cloudBaidu" && v !== "agnes"){
             lastLocalPref = v;
         }
         try{ localStorage.setItem("__ocrEngine", v); }catch(e){}
@@ -8836,13 +8858,21 @@ if(engineSel){
 }
 function syncCloudRow(){
     var pref = getOcrEnginePref();
-    var row1 = document.getElementById("ocrCloudRow"), row2 = document.getElementById("ocrBaiduRow");
+    var row1 = document.getElementById("ocrCloudRow"), row2 = document.getElementById("ocrBaiduRow"), row3 = document.getElementById("ocrAgnesRow");
     if(row1) row1.hidden = pref !== "cloud";
     if(row2) row2.hidden = pref !== "cloudBaidu";
+    if(row3) row3.hidden = pref !== "agnes";
 }
 function getCloudKey(){
     try{ return (localStorage.getItem("__ocrCloudKey") || "").trim() || "helloworld"; }
     catch(e){ return "helloworld"; }
+}
+/* V6.2.3：Agnes（视觉大模型）Key——内置体验 Key 作为种子默认值，
+   用户可在识别窗口内填写自有 Key（localStorage __ocrAgnesKey 优先） */
+var AGNES_KEY_SEED = "sk-ePNo3uy3RbMxV2hwPtsiybiG5G1dhhUNka7IZljdsmDmrcO8";
+function getAgnesKey(){
+    try{ return (localStorage.getItem("__ocrAgnesKey") || "").trim() || AGNES_KEY_SEED; }
+    catch(e){ return AGNES_KEY_SEED; }
 }
 function getBaiduKey(){ try{ return (localStorage.getItem("__ocrBaiduKey") || "").trim(); }catch(e){ return ""; } }
 function getBaiduSecret(){ try{ return (localStorage.getItem("__ocrBaiduSecret") || "").trim(); }catch(e){ return ""; } }
@@ -8867,11 +8897,20 @@ function getBaiduSecret(){ try{ return (localStorage.getItem("__ocrBaiduSecret")
             showStatus("ok", "百度 Key 已保存到本机浏览器（仅本地存储）");
         }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
     });
+    /* V6.2.3：Agnes Key 保存与恢复（预填内置体验 Key，可替换为自有 Key） */
+    var ai = document.getElementById("ocrAgnesKey"), btn3 = document.getElementById("ocrAgnesSave");
+    if(ai && !ai.value) ai.value = getAgnesKey();
+    if(btn3) btn3.addEventListener("click", function(){
+        try{
+            localStorage.setItem("__ocrAgnesKey", (ai && ai.value || "").trim());
+            showStatus("ok", "Agnes Key 已保存到本机浏览器（仅本地存储）");
+        }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
+    });
 })();
 
 /* V6.2.1：状态条双写——悬浮窗内 #ocrStatus 与卡片 #ocrCardStatus 保持同步；
-   卡片按钮（添加/开始识别/清除已导入图片）同步禁用态 */
-var cardStatusEl = $("ocrCardStatus"), cardRunBtn = $("ocrCardRun"), cardZone = $("ocrCardZone");
+   V6.2.3：卡片「开始识别」按钮已删除（添加成功即自动弹窗，识别在窗内进行） */
+var cardStatusEl = $("ocrCardStatus"), cardZone = $("ocrCardZone");
 function showStatus(cls, msg){
     statusEl.className = "pdf-status" + (cls ? " " + cls : "");
     statusEl.style.display = msg ? "block" : "none";
@@ -8995,8 +9034,8 @@ var paddleCache = {};                            // vk → { inst, loading }（�
 function getOcrEnginePref(){
     try{
         var v = localStorage.getItem("__ocrEngine");
-        return (v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud" || v === "cloudBaidu") ? v : "paddleV6";
-    }catch(e){ return "paddleV6"; }
+        return (v === "agnes" || v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud" || v === "cloudBaidu") ? v : "agnes";
+    }catch(e){ return "agnes"; }
 }
 /* V6.2.2：初始化刷新（引擎芯片 + 云端 Key 行显隐）——必须放在 PADDLE_VARIANTS
    定义之后。旧版把这两个调用放在引擎配置常量之前，refreshEngineChip 读取
@@ -9327,11 +9366,83 @@ async function baiduEngine(onPhase){
         }
     };
 }
+/* ---------------- V6.2.3 AI 识别引擎（Agnes 3.0 Flash 视觉大模型） ----------------
+   与传统 OCR 不同：视觉大模型直接「看」票面照片输出逐行文字，对歪斜/模糊/
+   小字的理解能力远超检测-识别两级管线（实测黄金票图主字段全部命中）。
+   OpenAI 兼容接口（POST /v1/chat/completions），Base64 图像 data URI 输入；
+   Key 内置体验 Key 作种子默认值，可在识别窗口内替换为自有 Key（仅存本机）。
+   与其他联网引擎相同：仅在用户明确选择并确认后才上传照片，失败回退本地引擎。
+   cloud:true —— 跳过本地多角度方向探测（每次探测都是一次完整云端上传+推理，
+   费时费流量；由提示词指示大模型自行转正票面）。 */
+async function agnesEngine(onPhase){
+    const k = getAgnesKey();
+    if(!k){
+        showStatus("err", "使用 Agnes AI 识别引擎需先在识别窗口内填写 API Key（内置体验 Key 已失效时请在 Agnes 中国站免费获取）");
+        return null;
+    }
+    if(!cloudConfirmed){
+        var ok = false;
+        try{ ok = window.confirm("即将使用 AI 识别引擎（Agnes 3.0 Flash）：票据照片将上传至 Agnes 云端，由视觉大模型直接读取票面文字与字段；除该引擎外，本应用所有功能均不上传任何数据。确定继续吗？（取消则改用本地引擎）"); }catch(e){ ok = false; }
+        if(!ok){
+            showStatus("", "已取消联网识别（未上传任何数据），自动改用本地引擎");
+            return null;
+        }
+        cloudConfirmed = true;
+    }
+    if(onPhase) onPhase("AI 识别中（上传票据照片至 Agnes…）");
+    return {
+        name: "Agnes 3.0 Flash",
+        cloud: true,
+        pre: function(cv){ return cv; },
+        recognize: async function(cv){
+            const dataUrl = shrinkForCloud(cv);
+            const ctrl = ("AbortController" in window) ? new AbortController() : null;
+            /* 大模型推理比传统 OCR 慢，超时放宽到 60s */
+            const timer = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 60000) : null;
+            let res;
+            try{
+                res = await fetch("https://api.agnes-ai.cn/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + k
+                    },
+                    body: JSON.stringify({
+                        model: "agnes-3.0-flash",
+                        temperature: 0,
+                        messages: [
+                            { role: "system", content: "你是火车票票面文字转录助手。用户会给你一张中国火车票（或行程信息单）照片。请严格逐行输出票面上印刷的全部文字：保持票面从上到下、从左到右的阅读顺序，每行一条；数字、字母、标点照原样转录，不要增删改任何字符；不要输出序号、解释、备注或 JSON。如果照片中的票据有旋转或倒置，请在心中先将其转正后再转录。" },
+                            { role: "user", content: [
+                                { type: "text", text: "请逐行转录这张火车票票面上的全部印刷文字。" },
+                                { type: "image_url", image_url: { url: dataUrl } }
+                            ] }
+                        ]
+                    }),
+                    signal: ctrl ? ctrl.signal : undefined
+                });
+            }catch(err){
+                if(timer) clearTimeout(timer);
+                throw new Error(/abort/i.test(String((err && err.name) || err)) ? "AI 识别请求超时（60s），请检查网络后重试" : "AI 识别请求失败：" + ((err && err.message) || err));
+            }
+            if(timer) clearTimeout(timer);
+            if(!res.ok) throw new Error("Agnes HTTP " + res.status);
+            const j = await res.json();
+            const choice = (j.choices || [])[0] || {};
+            const txt = (choice.message && choice.message.content || "").trim();
+            if(!txt) throw new Error((j.error && j.error.message) || "AI 未返回识别结果");
+            /* 云端不返回置信度：按有效字符量给保守估计 */
+            const cjk = (txt.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const aln = (txt.match(/[A-Za-z0-9]/g) || []).length;
+            const conf = Math.min(99, Math.round(Math.min(1, (cjk * 2 + aln) / 60) * 99));
+            return { data: { text: txt, confidence: conf } };
+        }
+    };
+}
 async function getEngine(onPhase){
     var pref = getOcrEnginePref();
-    if(pref === "cloud" || pref === "cloudBaidu"){
+    if(pref === "cloud" || pref === "cloudBaidu" || pref === "agnes"){
         var eng = null;
-        try{ eng = await (pref === "cloud" ? cloudEngine(onPhase) : baiduEngine(onPhase)); }
+        try{ eng = await (pref === "cloud" ? cloudEngine(onPhase) : pref === "agnes" ? agnesEngine(onPhase) : baiduEngine(onPhase)); }
         catch(err){
             console.warn("[OCR] 联网引擎失败，回退本地引擎", err);
             if(onPhase) onPhase("联网引擎不可用（" + ((err && err.message) || err) + "），改用本地引擎…");
@@ -9339,7 +9450,7 @@ async function getEngine(onPhase){
         if(eng){
             if(engineChip){
                 engineChip.hidden = false;
-                engineChip.textContent = pref === "cloud" ? "OCR.space·云" : "百度OCR·云";
+                engineChip.textContent = pref === "cloud" ? "OCR.space·云" : (pref === "agnes" ? "Agnes·AI识别" : "百度OCR·云");
                 engineChip.classList.add("ok");
             }
             return eng;
@@ -9778,15 +9889,22 @@ async function recognizeItem(it, worker, onPhase){
         if(bh > bw * 1.08) angles = [90, 270];
         else if(bw > bh * 1.08) angles = [0, 180];
         else angles = [0, 90, 270, 180];
-        let best = { deg: angles[0], score: -1 };
-        for(const deg of angles){
-            // V6.0：worker 参数已是引擎对象，预处理（enhance）由引擎自带 pre 决定（PP 引擎跳过二值化）
-            const sc = ocrScore((await worker.recognize(worker.pre(drawRotated(base, deg, PROBE)))).data);
-            if(sc > best.score) best = { deg: deg, score: sc };
+        /* V6.2.3：AI 云引擎（Agnes 视觉大模型）跳过本地多角度方向探测——
+           每次探测都是一次完整的云端上传+推理，费时费流量；由提示词指示
+           大模型自行转正票面（VLM 具备旋转不变理解能力） */
+        if(worker.cloud){
+            it.rotDeg = 0;
+        }else{
+            let best = { deg: angles[0], score: -1 };
+            for(const deg of angles){
+                // V6.0：worker 参数已是引擎对象，预处理（enhance）由引擎自带 pre 决定（PP 引擎跳过二值化）
+                const sc = ocrScore((await worker.recognize(worker.pre(drawRotated(base, deg, PROBE)))).data);
+                if(sc > best.score) best = { deg: deg, score: sc };
+            }
+            it.rotDeg = best.deg;
+            if(onPhase) onPhase("识别中（方向 " + best.deg + "°）…");
         }
-        it.rotDeg = best.deg;
-        if(onPhase) onPhase("识别中（方向 " + best.deg + "°）…");
-        const full = worker.pre(drawRotated(base, best.deg, 1900));
+        const full = worker.pre(drawRotated(base, it.rotDeg || 0, 1900));
         const res = await worker.recognize(full);
         it.text = res.data.text || "";
         it.conf = Math.round(res.data.confidence || 0);
@@ -10404,7 +10522,6 @@ function updateChipAll(){ items.forEach(updateChip); }
 function syncButtons(){
     const hasPending = items.some(it => it.status === "pending" || it.status === "error");
     runBtn.disabled = running || !hasPending;
-    if(cardRunBtn) cardRunBtn.disabled = runBtn.disabled;   // V6.2.1：卡片「开始识别」同步禁用态
     listEl.hidden = !items.length;
     actionsEl.hidden = !items.length;
 }
@@ -10523,6 +10640,9 @@ function addFiles(fl){
     syncButtons();
     showStatus("", "已添加 " + arr.length + " 张照片，共 " + items.length + " 张待识别，正在自动矫正与裁剪，可点击「开始识别」");
     enqueueRectify(added);        // V6.2.1：添加后立即自动矫正，不再等到识别时
+    /* V6.2.3：添加成功即自动弹出识别窗口——矫正/裁剪在窗内进行，用户点
+       窗口内「开始识别」才开始识别（一级界面卡片只负责添加与清除） */
+    if(window.__ocrOpenWin) window.__ocrOpenWin();
 }
 
 /* ---------------- 识别调度 ---------------- */
@@ -10699,7 +10819,6 @@ if(cardZone){
     bindDrop(cardZone);
 }
 if($("ocrCardAdd")) $("ocrCardAdd").addEventListener("click", pickFiles);
-if(cardRunBtn) cardRunBtn.addEventListener("click", runAll);
 if($("ocrCardClear")) $("ocrCardClear").addEventListener("click", clearAllItems);
 fileInput.addEventListener("change", function(){
     addFiles(fileInput.files);
