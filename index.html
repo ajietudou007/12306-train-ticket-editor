@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V5.6</title>
+<title>12306火车票票根编辑器V5.7</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2412,8 +2412,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.6</h1>
-        <p>阿杰同学 · V5.6 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.7</h1>
+        <p>阿杰同学 · V5.7 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -3287,8 +3287,105 @@ var MOD_DEFS = [
 ];
 window.__MOD_DEFS = MOD_DEFS;
 
+/* ---------- V5.7：模块级字体体系 ----------
+   内置字体选项（key → canvas font-family 回退链，跨平台兼顾 macOS / Windows）；
+   自定义导入字体以 "custom:名字" 为 key，经 FontFace API 注册（TTF/WOFF/WOFF2）。 */
+var FONT_OPTIONS = [
+    ["",       "默认（跟随票面）"],
+    ["arial",  "Arial"],
+    ["yahei",  "微软雅黑"],
+    ["simsun", "宋体"],
+    ["simhei", "黑体"],
+    ["times",  "Times New Roman"]
+];
+var FONT_FAMILY_MAP = {
+    "arial":  "Arial, 'Helvetica Neue', Helvetica, sans-serif",
+    "yahei":  "'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Heiti SC', sans-serif",
+    "simsun": "SimSun, 'Songti SC', serif",
+    "simhei": "SimHei, 'Heiti SC', 'STHeiti', sans-serif",
+    "times":  "'Times New Roman', Times, serif"
+};
+// 载荷校验：仅接受内置 key 或 "custom:" 前缀的导入字体名（防超长垃圾串）
+function isValidFontKey(k){
+    if(!k || typeof k !== "string") return false;
+    if(k.indexOf("custom:") === 0) return k.length > 7 && k.length <= 80;
+    for(var i = 0; i < FONT_OPTIONS.length; i++){ if(FONT_OPTIONS[i][0] === k) return true; }
+    return false;
+}
+// key → canvas font-family；未知（如分享链接带入但本机未导入的字体）返回 null，绘制层回退原字体
+function fontFamilyOf(key){
+    if(!key) return null;
+    if(key.indexOf("custom:") === 0){
+        var n = key.slice(7), L = window.__CUSTOM_FONTS || [];
+        for(var i = 0; i < L.length; i++){ if(L[i].name === n) return "'" + L[i].family + "'"; }
+        return null;
+    }
+    return FONT_FAMILY_MAP[key] || null;
+}
+window.__fontFamilyOf = fontFamilyOf;
+window.__isValidFontKey = isValidFontKey;
+
+// 自定义字体导入：ArrayBuffer → FontFace 注册；localStorage 持久化（超限静默降级为会话级）
+(function(){
+    var LS_KEY = "__ttCustomFonts";
+    window.__CUSTOM_FONTS = [];   // [{name, family, data(base64|null)}]
+
+    function b64ToBuf(b64){
+        var bin = atob(b64), len = bin.length, u8 = new Uint8Array(len);
+        for(var i = 0; i < len; i++) u8[i] = bin.charCodeAt(i);
+        return u8.buffer;
+    }
+    function bufToB64(buf){
+        var u8 = new Uint8Array(buf), s = "", CH = 0x8000;
+        for(var i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+        return btoa(s);
+    }
+    function persist(){
+        try{
+            var arr = window.__CUSTOM_FONTS.filter(function(f){ return f.data; })
+                .map(function(f){ return { name: f.name, family: f.family, data: f.data }; });
+            if(arr.length) localStorage.setItem(LS_KEY, JSON.stringify(arr));
+            else localStorage.removeItem(LS_KEY);
+        }catch(e){ /* 存储超限等：仅保留会话级，不影响功能 */ }
+    }
+    // 注册字体（buffer: ArrayBuffer）。返回 {name, family, data} 或 null（解析失败）
+    window.__registerCustomFont = function(name, buffer, save){
+        if(!name || !buffer) return null;
+        var family = "__cf_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+        var ff;
+        try{ ff = new FontFace(family, buffer); }
+        catch(e){ return null; }
+        try{ document.fonts.add(ff); }catch(e){ return null; }
+        // ArrayBuffer 来源的 FontFace 需显式 load；完成后重绘使正在使用的模块立即生效
+        if(ff.load){
+            ff.load().then(function(){
+                if(window.__refreshDtFontSel) window.__refreshDtFontSel();
+                if(window.redraw) redraw();
+            }).catch(function(){});
+        }
+        var rec = { name: String(name), family: family, data: save ? bufToB64(buffer) : null };
+        window.__CUSTOM_FONTS.push(rec);
+        if(save) persist();
+        return rec;
+    };
+    window.__persistCustomFonts = persist;
+    // 启动恢复（data 缺失 = 上次会话超限未持久化，跳过）
+    try{
+        var saved = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+        if(Array.isArray(saved)) saved.forEach(function(f){
+            if(f && f.name && f.data){
+                try{
+                    var b = b64ToBuf(f.data);
+                    var r = window.__registerCustomFont(f.name, b, false);
+                    if(r) r.data = f.data;   // 恢复复用原 base64，避免无谓重复编码
+                }catch(e){}
+            }
+        });
+    }catch(e){}
+})();
+
 function defaultModAdj(){
-    return { dx:0, dy:0, size:100, ls:0, weight:0 };
+    return { dx:0, dy:0, size:100, ls:0, weight:0, font:"" };
 }
 function clampNum(v, lo, hi, dft){
     v = Number(v);
@@ -3312,7 +3409,8 @@ function sanitizeModAdj(raw){
                 n.size   = clampNum(a.size, 50, 220, 100);
                 n.ls     = clampNum(a.ls, -6, 30, 0);
                 n.weight = clampNum(a.weight, 0, 800, 0);
-                if(n.dx || n.dy || n.size !== 100 || n.ls || n.weight) o[d[0]] = n;
+                n.font   = (isValidFontKey(a.font)) ? a.font : "";   // V5.7：模块字体（内置 key 或 custom:名字）
+                if(n.dx || n.dy || n.size !== 100 || n.ls || n.weight || n.font) o[d[0]] = n;
             }
         });
         var has = false; for(var k in o){ has = true; break; }
@@ -3329,7 +3427,7 @@ function getModAdj(tt, key){
     if(!per) return null;
     var a = per[key];
     if(!a) return null;
-    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight) return null;
+    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font) return null;
     return a;
 }
 // 进入 / 退出模块作用域（redraw 内成对调用）
@@ -3367,7 +3465,7 @@ function setModule(key){
         recBox(k, x0, y - px*0.78, x0 + w, y + px*0.78);
     }
 
-    // setFont 包装：模块作用域内应用字号缩放与字重，并记录生效字号
+    // setFont 包装：模块作用域内应用字号缩放、字重与模块字体，并记录生效字号
     setFont = function(sizePx, family){
         var w = window.__ticketFontWeight;
         var s = window.__ticketFontScale;
@@ -3375,6 +3473,10 @@ function setModule(key){
         if(m && m.adj){
             if(m.adj.size) s = s * m.adj.size / 100;
             if(m.adj.weight) w = m.adj.weight;
+            if(m.adj.font){   // V5.7：模块字体覆盖（内置 key 或 custom:名字；未知 key 回退原字体）
+                var f = fontFamilyOf(m.adj.font);
+                if(f) family = f;
+            }
         }
         window.__curFontPx = sizePx * s;
         ctx.font = w + " " + (sizePx * s) + "px " + family;
@@ -7216,6 +7318,23 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   border-color: var(--accent, #F5A623); font-weight:700;
 }
 #dtStepChips{ flex:0 0 auto; flex-direction:column; align-items:stretch; }
+/* V5.7：模块字体选择行（沿用 dt-chip 视觉语言；appearance:none 后自绘下拉箭头） */
+.dt-fontbar{ flex:1 1 auto; display:flex; align-items:center; gap:6px; min-width:0; }
+.dt-select{
+  flex:1 1 auto; min-width:0; appearance:none; -webkit-appearance:none; cursor:pointer;
+  font-size:11px; font-weight:600; font-family:var(--font-mono, ui-monospace, monospace); letter-spacing:.04em;
+  color: var(--text-dim, rgba(190,201,213,.66));
+  background-color: var(--surface2, #1A232E); border:1px solid var(--border, #28343F);
+  border-radius:6px; padding:4px 22px 4px 9px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 13px) calc(50% + 1px), calc(100% - 9px) calc(50% + 1px);
+  background-size: 4px 4px, 4px 4px; background-repeat: no-repeat;
+  transition: border-color .15s, color .15s;
+}
+.dt-select:hover{ border-color: var(--border-focus, #F5A623); color: var(--accent-text, #FFB63D); }
+.dt-select:focus{ outline:none; border-color: var(--accent, #F5A623); }
+.dt-select option{ background: var(--surface, #141C25); color: var(--text, rgba(233,239,246,.92)); }
+.dt-select option[disabled]{ color: var(--text-dim, rgba(190,201,213,.5)); }
 .dt-foot{
   flex:none; display:flex; align-items:center; gap:10px;
   padding:13px 22px; border-top:1px solid var(--hairline, rgba(255,255,255,.1));
@@ -7239,6 +7358,12 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V5.7</b><span>2026-09-25</span></div>
+      <ul>
+        <li><b>新增</b> 模块级字体自定义：细节调整悬浮窗新增「字体」行（粗细行下方），可为每个模块单独选择字体——内置 Arial、微软雅黑、宋体、黑体、Times New Roman 五种常见字体（含 macOS / Windows 回退链），或选回「默认（跟随票面）」恢复原字体；二维码与虚线框模块无文字，自动隐藏该行。模块字体按底图（票种）独立记忆，与位置 / 字号 / 间距 / 粗细一样随行程持久化，可一键重置。</li>
+        <li><b>新增</b> 自定义字体导入：字体行旁「导入」按钮支持上传 TTF / WOFF / WOFF2 字体文件（FontFace API 注册），导入后出现在字体下拉「自定义」分组中，可应用到任意文字模块；导入字体保存于本机浏览器（localStorage），刷新后仍可用，存储超限或清理浏览器数据时降级为仅本次会话有效（重新导入即可）；分享链接带入而本机未导入的字体自动回退默认字体，不影响显示。</li>
+        <li><b>实现</b> 字体覆盖在 setFont 绘制包装层生效（模块作用域内替换 font-family，ctx.font 合成时应用），所有文字绘制路径（含字间距逐字符绘制与 measureText 宽度推进）自动继承；调整表新增 font 字段经载荷净化（__sanitizeModAdj 白名单校验：内置 key 或 custom: 前缀），旧版本载荷无 font 字段自动兼容。</li>
+      </ul>
       <div class="cl-ver"><b>V5.6</b><span>2026-09-25</span></div>
       <ul>
         <li><b>修复</b> PDF 多份导入跨行程数据污染（严重）：连续导入或一次导入多份 PDF 时，解析第 2 份及之后的 PDF 会把其字段值污染进之前行程的独立副本（如行程 1 的取票机号被写成行程 2 的电子票号），且随分享参数持久化。根因为 saveInfo（每次重绘末尾调用）会把表单写回 batch.items[batch.index]，而提取管线中下一份 PDF 的解析结果已先一步覆盖表单。现提取期间置 __extracting 标记：saveInfo 跳过写回、batchGoto 暂停切换，提取完成后自动恢复，异常路径同样复位。</li>
@@ -7409,6 +7534,14 @@ $("bmExportModeSeg").addEventListener("click", function(e){
               <button class="dt-chip" data-w="800" type="button">800</button>
             </div>
           </div>
+          <div class="dt-ctl" id="dtFontRow">
+            <span class="dt-lab">字体</span>
+            <div class="dt-fontbar">
+              <select class="dt-select" id="dtFontSel" title="选择所选模块文字的字体（自定义字体需先导入）"></select>
+              <input type="file" id="dtFontFile" accept=".ttf,.woff,.woff2" hidden>
+              <button class="dt-chip" id="dtFontImport" type="button" title="导入自定义字体文件（TTF / WOFF / WOFF2），导入后可在字体下拉中选用">导入</button>
+            </div>
+          </div>
         </div>
         <div class="dt-sec" id="dtEmptySec">
           <div class="dt-empty">先在左侧票面单击要调整的模块<br>（如票号、检票口、二维码），<br>下方控制面板将只对所选模块生效。</div>
@@ -7475,6 +7608,10 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   var elCtlName  = document.getElementById("dtCtlName");
   var elSize = document.getElementById("dtSize"), elSizeVal = document.getElementById("dtSizeVal");
   var elLs   = document.getElementById("dtLs"),   elLsVal   = document.getElementById("dtLsVal");
+  var elFontSel   = document.getElementById("dtFontSel");
+  var elFontRow   = document.getElementById("dtFontRow");
+  var elFontFile  = document.getElementById("dtFontFile");
+  var elFontImportBtn = document.getElementById("dtFontImport");
   var btnResetMod = document.getElementById("dtResetMod");
   var btnResetAll = document.getElementById("dtResetAll");
   var elAlignSec  = document.getElementById("dtAlignSec");
@@ -7486,13 +7623,13 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   }
   function adjOf(key){
     var per = window.__MODULE_ADJ[ticketType] || (window.__MODULE_ADJ[ticketType] = {});
-    if(!per[key]) per[key] = { dx:0, dy:0, size:100, ls:0, weight:0 };
+    if(!per[key]) per[key] = { dx:0, dy:0, size:100, ls:0, weight:0, font:"" };
     return per[key];
   }
   function hasAdj(key){
     var per = window.__MODULE_ADJ[ticketType];
     var a = per && per[key];
-    return !!(a && (a.dx || a.dy || (a.size && a.size !== 100) || a.ls || a.weight));
+    return !!(a && (a.dx || a.dy || (a.size && a.size !== 100) || a.ls || a.weight || a.font));
   }
   // 写入调整 → 主预览即时重绘（内部同步保存载荷）→ 刷新悬浮窗快照（二维码延后绘制，补一帧）
   function apply(key, mut){
@@ -7500,7 +7637,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     var a = adjOf(key);
     mut(a);
     window.__adjDirty = true;   // V5.5：标记有调整，关闭悬浮窗时同步其他行程缩略图
-    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight){
+    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font){
       delete window.__MODULE_ADJ[ticketType][key];
     }
     redraw();
@@ -7712,7 +7849,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       if(!ddx && !ddy) return;
       var a = adjOf(k);
       a.dx += ddx; a.dy += ddy;
-      if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight){
+      if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font){
         delete window.__MODULE_ADJ[ticketType][k];
       }
       touched = true;
@@ -7734,11 +7871,13 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     document.getElementById("dtSizeRow").style.display = isDash ? "none" : "";
     document.getElementById("dtLsRow").style.display = (isQr || isDash) ? "none" : "";
     document.getElementById("dtWRow").style.display = (isQr || isDash) ? "none" : "";
+    elFontRow.style.display = (isQr || isDash) ? "none" : "";   // V5.7：二维码/虚线框无文字，隐藏字体行
     elSize.value = a.size || 100;
     elSizeVal.textContent = (a.size || 100) + "%";
     elLs.value = a.ls || 0;
     elLsVal.textContent = (Math.round((a.ls || 0) * 10) / 10) + "px";
     wchipEls.forEach(function(c){ c.classList.toggle("on", Number(c.dataset.w) === (a.weight || 0)); });
+    elFontSel.value = a.font || "";   // 列表已含该值则选中；否则浏览器回退为空（默认项）
   }
 
   // ---- 位置 / 字号 / 间距 / 粗细 ----
@@ -7776,6 +7915,54 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       if(!selKey) return;
       apply(selKey, function(a){ a.weight = Number(c.dataset.w) || 0; });
     });
+  });
+
+  // ---- V5.7 模块字体：下拉刷新 + 选择 + 导入 ----
+  function refreshDtFontSel(){
+    if(!elFontSel) return;
+    var cur = elFontSel.value || "";
+    elFontSel.innerHTML = "";
+    FONT_OPTIONS.forEach(function(o){
+      var op = document.createElement("option");
+      op.value = o[0]; op.textContent = o[1];
+      elFontSel.appendChild(op);
+    });
+    var L = window.__CUSTOM_FONTS || [];
+    if(L.length){
+      var og = document.createElement("optgroup");
+      og.label = "自定义";
+      L.forEach(function(f){
+        var op = document.createElement("option");
+        op.value = "custom:" + f.name; op.textContent = f.name;
+        og.appendChild(op);
+      });
+      elFontSel.appendChild(og);
+    }
+    elFontSel.value = cur;
+    if(elFontSel.value !== cur) elFontSel.value = "";   // 原选字体已不在列表（被删/未导入）→ 回退默认
+  }
+  window.__refreshDtFontSel = refreshDtFontSel;
+  refreshDtFontSel();
+  elFontSel.addEventListener("change", function(){
+    if(!selKey) return;
+    var v = this.value;
+    apply(selKey, function(a){ a.font = v; });
+  });
+  elFontImportBtn.addEventListener("click", function(){ elFontFile.click(); });
+  elFontFile.addEventListener("change", function(){
+    var f = elFontFile.files && elFontFile.files[0];
+    elFontFile.value = "";
+    if(!f) return;
+    if(!/\.(ttf|woff2?)$/i.test(f.name)){ alert("仅支持 TTF / WOFF / WOFF2 格式的字体文件。"); return; }
+    var name = f.name.replace(/\.(ttf|woff2?)$/i, "");
+    var rd = new FileReader();
+    rd.onload = function(){
+      var rec = window.__registerCustomFont(name, rd.result, true);
+      if(!rec){ alert("该字体文件无法解析，请更换文件后重试。"); return; }
+      refreshDtFontSel();
+    };
+    rd.onerror = function(){ alert("字体文件读取失败，请重试。"); };
+    rd.readAsArrayBuffer(f);
   });
 
   // ---- 重置 ----
