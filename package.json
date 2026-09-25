@@ -1,6 +1,6 @@
 {
   "name": "12306-train-ticket-editor",
-  "version": "6.2.1",
+  "version": "6.2.2",
   "description": "纯前端单文件的 12306 风格火车票票根编辑器：六款底图、正反面制作、模块级细节调整、12306 行程 PDF 智能导入、多行程管理与本地持久化。",
   "license": "MIT",
   "private": true,

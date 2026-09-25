@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.1</title>
+<title>12306火车票票根编辑器V6.2.2</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2511,8 +2511,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.1</h1>
-        <p>阿杰同学 · V6.2.1 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.2</h1>
+        <p>阿杰同学 · V6.2.2 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2641,9 +2641,10 @@ window.__exportProgress = (function(){
               <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
             </div>
           </div>
-          <input type="file" id="ocrFile" accept="image/*" multiple class="ocr-input">
-          <!-- V6.2.1：参照 PDF 导入卡片样式重排——虚线拖放区 + 按钮行（添加/开始识别/清除已导入图片）+ 状态条；
-               照片列表、字段核对、生成行程仍在独立悬浮窗 #ocrWin 内进行（桌面端可拖拽） -->
+          <input type="file" id="ocrFile" accept="image/*,.heic,.heif,.avif,.tif,.tiff" multiple class="ocr-input">
+          <!-- V6.2.2：卡片布局沿用 V6.2.1 的 PDF 风格（拖放区+按钮列+状态条）；
+               点击/拖入链路加固——统一 pickFiles() 入口（即时反馈+click 兜底）、
+               filesFromDrop()（items 兜底）、addFiles 扩展识别格式并输出明确格式错误提示 -->
           <div class="pdf-flex">
             <div class="pdf-zone ocr-zone-card" id="ocrCardZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
               <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
@@ -7997,6 +7998,12 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.2</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>修复</b> 导入纸质火车票时<b>「点击添加 / 拖入没有反应」</b>：根因是 OCR 模块脚本内 <code>refreshEngineChip()</code> 初始化调用早于其依赖的 <code>PADDLE_VARIANTS</code> 常量定义，加载即抛 <b>TypeError</b>，导致同一脚本块内其后代码全部中断——<b>添加按钮 / 拖放区 / 文件选择的所有事件监听从未挂载</b>（V6.2.1 起引入）。现初始化调用移至常量定义之后并加 try/catch 兜底，初始化异常绝不再阻断模块装配。</li>
+        <li><b>加固</b> 添加/拖入链路反馈：所有点击入口统一走 <code>pickFiles()</code>——<b>立即弹出状态提示</b>「已唤起文件选择…（如对话框未弹出请再点一次）」并给出格式说明，点击异常时自动重试一次，仍失败才提示更换浏览器；<code>addFiles</code> 扩展支持 <b>HEIC / HEIF / AVIF / TIFF</b>（iPhone 照片常见的 HEIC 此前被静默过滤，用户侧同样表现为「没反应」），被过滤时按情况给出<b>明确的格式错误提示</b>（含「HEIC 请先转 JPG 或截图」建议）；拖入时新增 <code>filesFromDrop()</code> 兜底（部分浏览器 drag 的 files 不可用时改从 dataTransfer.items 取文件）；拖放区与文件输入 accept 同步扩展。</li>
+        <li><b>优化</b> 缩略图 blob URL <b>延迟回收</b>（清除 / 删除 / 矫正换图时）：同步 revoke 会中止在途加载，浏览器控制台会刷 <code>net::ERR_FILE_NOT_FOUND</code> 噪音；改为渲染更新后下一帧回收，控制台干净。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.1</b><span>2026-09-26</span></div>
       <ul>
         <li><b>修复</b> <b>车厢号 / 座位号 / 检票口识别为空</b>：小字漏检时新增三级兜底——①文本层增加「车厢:5 / 座位:10F / 10F号 / 014号」标签式与独立式正则；②PP 引擎检出框<b>位置感知补全</b>（「车厢」「座位」「检票」标签框 → 同行右侧 / 正下方框按空间配对取值，仅补缺失不覆盖）；③仍缺失时对票面中上部 / 右下区域<b>裁剪放大补盲重识别</b>（仅本地引擎，不额外联网）。实测主字段全部命中。</li>
@@ -8793,7 +8800,7 @@ function refreshEngineChip(){
     if(pref === "cloud") txt = "OCR.space·云";
     else if(pref === "cloudBaidu") txt = "百度OCR·云";
     else if(pref === "tesseract") txt = "Tesseract·轻量";
-    else if(PADDLE_VARIANTS[pref]) txt = PADDLE_VARIANTS[pref].chip;
+    else if(PADDLE_VARIANTS && PADDLE_VARIANTS[pref]) txt = PADDLE_VARIANTS[pref].chip;   // V6.2.2：防御未定义（定义在脚本后段，早期调用时为 undefined）
     engineChip.hidden = !txt;
     engineChip.textContent = txt;
     engineChip.classList.add("ok");
@@ -8861,8 +8868,6 @@ function getBaiduSecret(){ try{ return (localStorage.getItem("__ocrBaiduSecret")
         }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
     });
 })();
-syncCloudRow();
-refreshEngineChip();
 
 /* V6.2.1：状态条双写——悬浮窗内 #ocrStatus 与卡片 #ocrCardStatus 保持同步；
    卡片按钮（添加/开始识别/清除已导入图片）同步禁用态 */
@@ -8993,6 +8998,14 @@ function getOcrEnginePref(){
         return (v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud" || v === "cloudBaidu") ? v : "paddleV6";
     }catch(e){ return "paddleV6"; }
 }
+/* V6.2.2：初始化刷新（引擎芯片 + 云端 Key 行显隐）——必须放在 PADDLE_VARIANTS
+   定义之后。旧版把这两个调用放在引擎配置常量之前，refreshEngineChip 读取
+   PADDLE_VARIANTS[pref]（此时 var 提升后为 undefined）直接抛 TypeError，
+   同一脚本块内其后代码全部中断——OCR 模块的事件绑定（点击添加/拖入/change）
+   从未挂载，表现为「点添加、拖入都没反应」。try/catch 兜底保证此类初始化
+   异常今后绝不再阻断模块装配。 */
+try{ syncCloudRow(); }catch(e){ console.warn("[OCR] syncCloudRow 初始化失败", e); }
+try{ refreshEngineChip(); }catch(e){ console.warn("[OCR] refreshEngineChip 初始化失败", e); }
 function dynImport(u){
     try{ var f = new Function("u", "return import(u);"); return f(u); }
     catch(e){ return Promise.reject(e); }
@@ -10395,11 +10408,17 @@ function syncButtons(){
     listEl.hidden = !items.length;
     actionsEl.hidden = !items.length;
 }
+/* V6.2.2：延迟回收 blob URL——同步 revoke 会中止尚未加载完成的缩略图请求，
+   Chrome 会在控制台刷 net::ERR_FILE_NOT_FOUND（清除/删除时的噪音，无功能影响） */
+function deferRevoke(url){
+    if(!url) return;
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 0);
+}
 function removeItem(it){
     const i = items.indexOf(it);
     if(i < 0) return;
     items.splice(i, 1);
-    if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} }
+    deferRevoke(it.thumbUrl);                   // V6.2.2：先渲染后回收，避免中止在途加载
     renderList();
     syncButtons();
 }
@@ -10463,7 +10482,7 @@ async function rectifyOne(it){
                             const timg = it.el && it.el.querySelector(".ocr-thumb");
                             if(timg){
                                 timg.src = it.thumbUrl2;
-                                if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} it.thumbUrl = ""; }
+                                deferRevoke(it.thumbUrl); it.thumbUrl = "";   // V6.2.2：延迟回收旧 blob 缩略图
                             }
                             if(it.el) it.el.classList.add("rectified");
                             updateChip(it);
@@ -10481,9 +10500,23 @@ async function rectifyOne(it){
 window.__ocrRectifyAll = function(){
     return items.map(function(it){ return { name: it.name, rectifyTried: it.rectifyTried, rectified: it.rectified }; });
 };
+/* V6.2.2：识别格式判别——扩展 HEIC / HEIF / AVIF / TIFF（iPhone 照片常见的 HEIC
+   其 f.type 为空串、旧版仅认 jpg/png/webp/bmp，会被静默过滤，用户侧表现为「没反应」） */
+const OCR_IMG_EXT = /\.(jpe?g|png|webp|bmp|heic|heif|avif|tiff?)$/i;
+function isOcrImgFile(f){
+    return !!f && (/^image\//.test(f.type) || OCR_IMG_EXT.test(f.name || ""));
+}
 function addFiles(fl){
-    const arr = Array.prototype.slice.call(fl || []).filter(f => f && (/^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp)$/i.test(f.name)));
-    if(!arr.length){ showStatus("err", "请选择图片文件（JPG / PNG / WebP 等）"); return; }
+    const all = Array.prototype.slice.call(fl || []);
+    const arr = all.filter(isOcrImgFile);
+    if(!arr.length){
+        if(all.length){
+            showStatus("err", "已选 " + all.length + " 个文件均不是可用图片格式。支持 JPG / PNG / WebP / BMP / HEIC / TIFF；iPhone 拍摄的 HEIC 照片请先在相册中「存储为 JPG」或截图后再试");
+        }else{
+            showStatus("err", "请选择图片文件（JPG / PNG / WebP / HEIC 等）");
+        }
+        return;
+    }
     const added = [];
     arr.forEach(f => { const it = { file: f, name: f.name, status: "pending", confirmed: false }; items.push(it); added.push(it); });
     renderList();
@@ -10609,46 +10642,77 @@ async function applyAll(){
 }
 
 /* ---------------- 事件绑定 ---------------- */
-zone.addEventListener("click", function(){ fileInput.click(); });
-zone.addEventListener("keydown", function(e){
-    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
-});
-zone.addEventListener("dragover", function(e){ e.preventDefault(); zone.classList.add("dragover"); });
-zone.addEventListener("dragleave", function(){ zone.classList.remove("dragover"); });
-zone.addEventListener("drop", function(e){
-    e.preventDefault();
-    zone.classList.remove("dragover");
-    if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
-});
-/* V6.2.1：卡片拖放区与按钮（参照 PDF 导入卡片布局）——与悬浮窗共用同一 items 队列 */
-if(cardZone){
-    cardZone.addEventListener("click", function(){ fileInput.click(); });
-    cardZone.addEventListener("keydown", function(e){
-        if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
-    });
-    cardZone.addEventListener("dragover", function(e){ e.preventDefault(); cardZone.classList.add("dragover"); });
-    cardZone.addEventListener("dragleave", function(){ cardZone.classList.remove("dragover"); });
-    cardZone.addEventListener("drop", function(e){
+/* V6.2.2：唤起文件选择的统一入口——即时状态反馈 + click 失败兜底，
+   解决「点了添加没反应」的感知问题（部分浏览器/场景下隐藏 input 的
+   click 不弹框或弹框被拦截，用户侧完全无反馈） */
+function pickFiles(){
+    showStatus("", "已唤起文件选择…（如对话框未弹出请再点一次；支持 JPG / PNG / WebP / BMP / HEIC，iPhone HEIC 照片请先转 JPG 或截图）");
+    try{
+        fileInput.click();
+    }catch(e){
+        setTimeout(function(){
+            try{ fileInput.click(); }
+            catch(e2){
+                showStatus("err", "无法打开文件选择对话框，请更换浏览器（推荐最新版 Chrome / Edge / Safari）后重试");
+            }
+        }, 60);
+    }
+}
+/* V6.2.2：拖入取文件兜底——部分浏览器/场景 dataTransfer.files 为空但 items 可用 */
+function filesFromDrop(e){
+    const dt = e.dataTransfer;
+    if(!dt) return null;
+    if(dt.files && dt.files.length) return dt.files;
+    const out = [];
+    try{
+        for(let i = 0; i < dt.items.length; i++){
+            if(dt.items[i] && dt.items[i].kind === "file"){
+                const f = dt.items[i].getAsFile();
+                if(f) out.push(f);
+            }
+        }
+    }catch(err){}
+    return out.length ? out : null;
+}
+function bindDrop(zoneEl){
+    if(!zoneEl) return;
+    zoneEl.addEventListener("dragover", function(e){ e.preventDefault(); zoneEl.classList.add("dragover"); });
+    zoneEl.addEventListener("dragleave", function(){ zoneEl.classList.remove("dragover"); });
+    zoneEl.addEventListener("drop", function(e){
         e.preventDefault();
-        cardZone.classList.remove("dragover");
-        if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+        zoneEl.classList.remove("dragover");
+        const fl = filesFromDrop(e);
+        if(fl) addFiles(fl);
     });
 }
-if($("ocrCardAdd")) $("ocrCardAdd").addEventListener("click", function(){ fileInput.click(); });
+zone.addEventListener("click", pickFiles);
+zone.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pickFiles(); }
+});
+bindDrop(zone);
+/* V6.2.1：卡片拖放区与按钮（参照 PDF 导入卡片布局）——与悬浮窗共用同一 items 队列 */
+if(cardZone){
+    cardZone.addEventListener("click", pickFiles);
+    cardZone.addEventListener("keydown", function(e){
+        if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pickFiles(); }
+    });
+    bindDrop(cardZone);
+}
+if($("ocrCardAdd")) $("ocrCardAdd").addEventListener("click", pickFiles);
 if(cardRunBtn) cardRunBtn.addEventListener("click", runAll);
 if($("ocrCardClear")) $("ocrCardClear").addEventListener("click", clearAllItems);
 fileInput.addEventListener("change", function(){
     addFiles(fileInput.files);
     fileInput.value = "";                      // 允许再次选择同一文件
 });
-addBtn.addEventListener("click", function(){ fileInput.click(); });
+addBtn.addEventListener("click", pickFiles);
 runBtn.addEventListener("click", runAll);
 $("ocrApplyAll").addEventListener("click", applyAll);
 $("ocrExport").addEventListener("click", exportCsv);
 /* V6.2.1：清除已导入图片（卡片按钮 / 窗内清空 / 一键清除共用同一入口） */
 function clearAllItems(){
     if(!items.length) return false;
-    items.forEach(function(it){ if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} } });
+    items.forEach(function(it){ deferRevoke(it.thumbUrl); });   // V6.2.2：延迟回收，避免中止在途缩略图加载
     items.length = 0;                          // 保持数组引用（__ocrItems 钩子）不变
     rectifyQueue.length = 0;                   // 丢弃尚在排队中的自动矫正任务
     renderList();
