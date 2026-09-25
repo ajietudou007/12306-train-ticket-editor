@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V5.8</title>
+<title>12306火车票票根编辑器V5.9</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2414,8 +2414,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.8</h1>
-        <p>阿杰同学 · V5.8 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.9</h1>
+        <p>阿杰同学 · V5.9 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -3192,10 +3192,9 @@ function init() {
         };
         // 二维码已就绪（缓存命中且 img 解码完成）→ 立即导出；否则沿用 400ms 等待，
         // 缩短点击到下载的间隔，降低移动端用户激活过期的风险
-        var qrReady = (typeof qrImg !== "undefined") && qrImg.complete
-            && window.__qrCache && window.__qrCache.url && qrImg.src === window.__qrCache.url;
-        if (qrReady) exportNow();
-        else setTimeout(exportNow, 400);
+        // V5.9：img 就绪 ≠ 画布已绘制（drawQR 延时 100ms 回贴）。改为条件等待——
+        // 图片就绪且 __qrPainted 打标后才导出，3s 超时兜底，修复导出图缺二维码
+        window.__waitQrPainted(exportNow);
     }
 
 
@@ -3627,8 +3626,25 @@ qrImg.onload = function(){
         var p = qrDrawPos(ticketType);
         ctx.drawImage(qrImg, p[0], p[1], p[2], p[2]);
         window.__recModBox("qr", p[0], p[1], p[0] + p[2], p[1] + p[2]);
+        window.__qrPainted = true;   // V5.9：异步补绘完成，画布上的二维码已就绪
     }catch(e){}
 };
+
+// V5.9：导出统一等待——二维码图片就绪（src 与缓存一致且解码可用）且画布已绘制
+// （drawQR 延时回贴 / onload 异步补绘二者之一完成）后再执行导出回调；
+// 超时（默认 3s）兜底放行，避免极端情况下导出流程卡死。修复导出图缺二维码 / 跨行程旧码。
+function __waitQrPainted(fn, maxMs){
+    var t0 = Date.now();
+    maxMs = maxMs || 3000;
+    (function poll(){
+        var imgReady = (typeof qrImg !== "undefined") && qrImg.complete
+            && qrImg.naturalWidth > 0 && window.__qrCache
+            && window.__qrCache.url && qrImg.src === window.__qrCache.url;
+        if((imgReady && window.__qrPainted) || Date.now() - t0 > maxMs){ fn(); return; }
+        setTimeout(poll, 80);
+    })();
+}
+window.__waitQrPainted = __waitQrPainted;
 
 // ===== V5.1：各底图（票种）排版微调 =====
 /* 6 款底图共用同一套画布坐标，新底图的版面与原版存在差异，
@@ -3896,6 +3912,9 @@ function redraw(){
 
     // V5.3：每次重绘前清空模块命中框（绘制过程中由包装层逐模块记录）
     window.__resetModBoxes();
+    // V5.9：本轮重绘的二维码尚未回贴（drawQR 延时 100ms / qrImg.onload 异步补绘），
+    // 导出侧凭 __qrPainted 标记判断画布上的二维码是否就绪，防止导出空二维码
+    window.__qrPainted = false;
 
     drawBg();
 
@@ -4086,6 +4105,11 @@ function redraw(){
             var p = qrDrawPos(qrTicketType);
             ctx.drawImage(qrImg, p[0], p[1], p[2], p[2]);
             window.__recModBox("qr", p[0], p[1], p[0] + p[2], p[1] + p[2]);
+            // V5.9：确认画上的是当前二维码（而非切换行程前的旧图）才打「已绘制」标
+            if (qrImg.complete && qrImg.naturalWidth > 0 && window.__qrCache
+                && window.__qrCache.url && qrImg.src === window.__qrCache.url) {
+                window.__qrPainted = true;
+            }
         }, 100);
     };
     drawQR();
@@ -5186,7 +5210,9 @@ window.batchSaveAll = function(){
         if(P) P.update(idx, items.length, "正在渲染：" + (tripField(it,"trainNo") || "车票") + " " +
             (tripField(it,"startStation") || "") + "—" + (tripField(it,"endStation") || ""));
         // 等待画布与二维码异步绘制完成（QRCode.toDataURL 回调内还有 100ms 延时）
-        setTimeout(function(){
+        // V5.9：固定 400ms 改为条件等待——行程切换时旧 400ms 内 qrImg 仍是上一行程
+        // 的旧码（错版二维码），现等待「图片就绪 + __qrPainted 已绘制」再抓画布
+        window.__waitQrPainted(function(){
             try{
                 // 4.5：只保留「正面 + 背面合并为一张」一种形态；
                 // 4.1 的「分别导出（正面 / 背面两张）」已移除——导出数量 > 1 一律合并为 ZIP。
@@ -5204,7 +5230,7 @@ window.batchSaveAll = function(){
             }
             idx++;
             setTimeout(tick, 350);
-        }, 400);
+        });
     };
     tick();
 };
@@ -7025,7 +7051,8 @@ function bmExportZip(items){
     bmShowTrip(i);
     if(P) P.update(done, total, "正在渲染：" + bmFileBase(items[i]));
     // 等待画布 + 二维码异步绘制完成（QRCode 回调内还有 100ms 延时，与 batchSaveAll 保持一致）
-    setTimeout(function(){
+    // V5.9：固定 700ms 改为条件等待（图片就绪 + __qrPainted），防止行程切换时抓到旧码/空码
+    window.__waitQrPainted(function(){
       try{
         if(split){
           /* 4.6：分开导出 —— 正面用主画布当前行程，背面单独绘制，各自独立成图 */
@@ -7061,7 +7088,7 @@ function bmExportZip(items){
       }
       i++;
       setTimeout(tick, 350);
-    }, 700);
+    });
   };
   tick();
 }
@@ -7361,6 +7388,11 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V5.9</b><span>2026-09-25</span></div>
+      <ul>
+        <li><b>修复</b> 导出图片缺二维码 / 跨行程旧码：V5.6 的「二维码就绪立即导出」与重绘的二维码 100ms 延时回贴存在竞态——图片元素就绪不代表画布已绘制，导出时抓到的是重绘后二维码尚未回贴的画布（实测导出图二维码区域纯空白）。移动端用户「填完即导出」的操作节奏高频命中，所有浏览器（含桌面端）均受影响。现导出统一改为条件等待：二维码图片就绪（src 与缓存一致且解码可用）且画布完成回贴（打标 <b>__qrPainted</b>）后才抓取画布，80ms 轮询、3 秒超时兜底。</li>
+        <li><b>修复</b> 批量导出 ZIP 同类隐患：批量导出与背面 ZIP 原依赖固定延时（400ms / 700ms）抓画布，行程内容切换时二维码异步重算未完成，会抓到<b>上一行程的旧二维码</b>（错版码，比缺失更隐蔽）。三处导出路径（单张导出 / 批量 ZIP / 背面 ZIP）统一接入同一等待机制，确保每张图片的二维码与行程内容一一对应。</li>
+      </ul>
       <div class="cl-ver"><b>V5.8</b><span>2026-09-25</span></div>
       <ul>
         <li><b>新增</b> 「PDF 行程导入」卡片标题行右侧新增「跳转PDF官方下载」按钮：点击在新标签页打开 12306 官网（www.12306.cn），方便前往官方渠道下载「行程信息提示」PDF，无需离开编辑器；按钮复用现有 btn-mini 外观（含下载图标与悬停效果），不改变原布局与交互。</li>

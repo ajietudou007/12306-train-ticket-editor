@@ -4,7 +4,7 @@
 
 *纯前端 · 单文件 · 零依赖 · 数据不出浏览器*
 
-![Version](https://img.shields.io/badge/version-5.8-2E7CF6)
+![Version](https://img.shields.io/badge/version-5.9-2E7CF6)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -15,9 +15,9 @@
 一个 12306 风格的火车票票根编辑器：填写行程信息即可实时生成以假乱真的车票正面与背面，  
 支持六款票面底图、模块级细节精修、12306 行程 PDF 智能导入与多行程管理，可一键导出图片。
 
-**🚀 在线使用**：<https://ajietudou007.github.io/12306-train-ticket-editor/?v=5.8>
+**🚀 在线使用**：<https://ajietudou007.github.io/12306-train-ticket-editor/?v=5.9>
 
-> 💡 链接自带版本参数 `?v=5.8` 以绕过 CDN / 浏览器缓存。若页面仍显示旧版本，请强制刷新（`Cmd/Ctrl + Shift + R`）。
+> 💡 链接自带版本参数 `?v=5.9` 以绕过 CDN / 浏览器缓存。若页面仍显示旧版本，请强制刷新（`Cmd/Ctrl + Shift + R`）。
 
 </div>
 
@@ -87,9 +87,9 @@ python3 -m http.server 8080
 
 ```text
 GitHub火车票编辑器/
-├── index.html      # 应用本体（V5.8，含全部样式 / 脚本 / 内嵌底图资源）
+├── index.html      # 应用本体（V5.9，含全部样式 / 脚本 / 内嵌底图资源）
 ├── README.md
-├── CHANGELOG.md    # 版本日志（V4.0 → V5.8）
+├── CHANGELOG.md    # 版本日志（V4.0 → V5.9）
 ├── LICENSE         # MIT
 ├── package.json    # 仅用于 npm start 一键启动本地服务
 └── .gitignore
