@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.1</title>
+<title>12306火车票票根编辑器V6.2</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2419,8 +2419,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.1</h1>
-        <p>阿杰同学 · V6.1 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2</h1>
+        <p>阿杰同学 · V6.2 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2539,9 +2539,11 @@ window.__exportProgress = (function(){
             <span class="sec-no">03</span>
             <h2>纸质票扫描识别</h2>
             <div class="header-meta">
-              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：高精度 = PP-OCRv5 深度学习模型（PaddleOCR，首次联网下载约 16MB 后可离线）；轻量 = Tesseract（约 25MB）">
+              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：超精度 = PP-OCRv6 深度学习模型（PaddleOCR 最新一代，首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网 = OCR.space 免费云识别（仅在明确选择并确认后才联网，可在识别窗口内配置 API Key）">
+                <option value="paddleV6">超精度引擎</option>
                 <option value="paddle">高精度引擎</option>
                 <option value="tesseract">轻量引擎</option>
+                <option value="cloud">联网引擎（云）</option>
               </select>
               <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
             </div>
@@ -7493,16 +7495,95 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 .ocr-zone:hover .pdf-icon { transform: translateY(-3px) scale(1.12); color: var(--accent-text); }
 .ocr-zone .pdf-hint { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); position: relative; z-index: 2; }
 .ocr-zone .pdf-hint strong { color: var(--accent-text); font-weight: 650; }
-.ocr-win .pdf-progress {
-  position: absolute;
-  left: 10px; right: 10px; bottom: 10px;
-  margin: 0;
-  padding: 8px 10px;
-  background: var(--surface, #1A232E);
-  border: 1px solid var(--border, #28343F);
-  border-radius: 10px;
-  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+/* V6.2：识别进度顶条——标题栏下方独立一行，流光渐变动画，永不遮挡 */
+.ocr-top-prog {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2, var(--surface));
 }
+.ocr-top-prog[hidden] { display: none; }
+.otp-track {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--field-bg);
+  border: 1px solid var(--hairline);
+  overflow: hidden;
+}
+.otp-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background-color: var(--accent);
+  background-image:
+    linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 100%),
+    linear-gradient(90deg, var(--accent), var(--accent-text, #F5A623));
+  background-size: 45% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 10px rgba(245, 166, 35, .35);
+  transition: width .35s var(--ease-out);
+  animation: otpShimmer 1.6s linear infinite;
+}
+.otp-fill.indet {
+  width: 42%;
+  animation: otpSlide 1.25s var(--ease-in-out) infinite, otpShimmer 1.6s linear infinite;
+}
+@keyframes otpShimmer {
+  0%   { background-position: -120% 0, 0 0; }
+  100% { background-position: 260% 0, 0 0; }
+}
+@keyframes otpSlide {
+  0%   { margin-left: -45%; }
+  100% { margin-left: 108%; }
+}
+.otp-text {
+  flex: none;
+  max-width: 52%;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* V6.2：联网引擎 API Key 配置行（仅引擎选「联网引擎」时显示） */
+.ocr-cloud-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface2);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.ocr-cloud-row[hidden] { display: none; }
+.ocr-cloud-row label { flex: none; font-weight: 650; color: var(--text); }
+.ocr-cloud-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field-bg);
+  color: var(--text);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  outline: none;
+}
+.ocr-cloud-row input:focus-visible { border-color: var(--border-focus, #F5A623); }
+.ocr-cloud-row .btn { flex: none; }
+.ocr-cloud-link { flex: none; color: var(--accent-text); text-decoration: underline; white-space: nowrap; }
+.ocr-cloud-link:hover { color: var(--accent); }
 .ocr-win .pdf-status { margin-top: 8px; }
 /* 引擎状态小徽标（标题行右侧） */
 .ocr-engine-chip {
@@ -7551,6 +7632,22 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 }
 .ocr-item.done { border-color: rgba(70,193,120,.45); }
 .ocr-item.err  { border-color: rgba(242,89,94,.45); }
+/* V6.2：已自动矫正/裁剪的条目——缩略图描绿边并挂「已矫正」角标，预览区只显示矫正后票面 */
+.ocr-item.rectified .ocr-thumb { border-color: rgba(70,193,120,.65); box-shadow: 0 0 0 1px rgba(70,193,120,.35); }
+.ocr-item.rectified .ocr-thumb-wrap::after {
+  content: "已矫正";
+  position: absolute;
+  left: 3px; top: 3px;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  line-height: 1.5;
+  font-weight: 700;
+  border-radius: 999px;
+  color: #0d1a12;
+  background: rgba(70, 193, 120, .92);
+  pointer-events: none;
+}
+.ocr-thumb-wrap { position: relative; flex: none; align-self: flex-start; }
 .ocr-thumb {
   width: 112px; height: 72px;
   object-fit: cover;
@@ -7647,8 +7744,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   position: fixed;
   z-index: 2600;
   left: 0; top: 0;
-  width: 680px;
-  height: 480px;
+  width: 50vw;                    /* V6.2：默认占屏幕宽高各 50%（保留最小 600×400 与拖拽） */
+  height: 50vh;
   min-width: 600px;
   min-height: 400px;
   max-width: calc(100vw - 24px);
@@ -7748,21 +7845,30 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     <span class="ocr-win-sub" id="ocrWinSub"></span>
     <button class="ocr-win-close" id="ocrWinClose" type="button" aria-label="关闭窗口" title="关闭窗口（Esc）"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>
+  <!-- V6.2：识别进度条从拖放区内覆盖层改为标题栏下方独立顶条——流光渐变动画，
+       不再被图片列表/拖放提示遮挡，加载状态一眼可见 -->
+  <div class="ocr-top-prog" id="ocrTopProg" hidden>
+    <div class="otp-track"><span class="otp-fill" id="ocrTopFill"></span></div>
+    <span class="otp-text" id="ocrTopText">识别中…</span>
+  </div>
   <div class="ocr-win-body">
     <div class="ocr-flex">
       <div class="ocr-zone" id="ocrZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
         <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
-        <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）</div>
-        <!-- 识别进度为拖放区内覆盖层（与 PDF 模块一致），不占布局空间 -->
-        <div class="pdf-progress" id="ocrProgress" hidden>
-          <div class="pdf-progress-bar"><span id="ocrProgressFill"></span></div>
-          <div class="pdf-progress-text" id="ocrProgressText">识别中…</div>
-        </div>
+        <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）<br>已支持拍摄角度自动矫正与标准票幅裁剪</div>
       </div>
       <div class="ocr-btns">
         <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
         <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
       </div>
+    </div>
+    <!-- V6.2：联网引擎（OCR.space）API Key 配置行——仅在引擎下拉选择「联网引擎」时显示；
+         免费额度有限，建议注册自己的免费 Key（不填则用公共体验 Key，限 10 次/10 分钟） -->
+    <div class="ocr-cloud-row" id="ocrCloudRow" hidden>
+      <label for="ocrCloudKey">联网 Key</label>
+      <input type="text" id="ocrCloudKey" placeholder="OCR.space API Key（不填用公共体验 Key）" autocomplete="off" spellcheck="false">
+      <button class="btn btn-mini" id="ocrCloudSave" type="button" title="保存 Key 到本机浏览器（不上传）">保存</button>
+      <a class="ocr-cloud-link" href="https://ocr.space/ocrapi/freekey" target="_blank" rel="noopener noreferrer">免费领取</a>
     </div>
     <div class="ocr-list" id="ocrList" hidden></div>
     <div class="ocr-actions-bar" id="ocrActions" hidden>
@@ -7781,6 +7887,14 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>新增</b> 拍摄角度<b>自动矫正</b>：上传歪斜/透视拍摄的火车票照片时，自动检测票面四角（Otsu 二值化 + 最大连通域 + 极值角点），单应变换拉正并按<b>标准火车票票幅比例（85.6:54）</b>裁剪成 1600px 宽标准票面后再识别；识别成功的条目缩略图同步显示<b>矫正后的票面</b>（挂「已矫正」角标），不再显示原始歪斜照片，识别置信度显著提升。</li>
+        <li><b>新增</b> 本地引擎升级为 <b>PP-OCRv6</b>（PaddleOCR 最新一代，PPLCNetV4 统一骨干）：中文检测/识别精度全面超越上一代，仍为纯本地推理（首次联网下载约 30MB 模型后可离线）；原 PP-OCRv5 保留为「高精度引擎」可选，Tesseract 为「轻量引擎」，三档本地引擎自由切换。</li>
+        <li><b>新增</b> <b>联网 OCR 备选引擎</b>（OCR.space 免费云识别）：引擎下拉新增「联网引擎（云）」，<b>仅当用户明确选择并二次确认后</b>才会联网上传照片识别，取消确认或未选择时一切保持纯本地、不上传任何数据；支持在识别窗口内配置自己的免费 API Key（仅存本机浏览器），云端失败自动回退本地引擎。</li>
+        <li><b>优化</b> 识别悬浮窗升级：默认尺寸改为<b>屏幕宽高各 50%</b>（保留最小 600×400 与标题栏拖拽），照片列表与字段编辑空间更充裕。</li>
+        <li><b>优化</b> 加载动画重做：识别进度条从拖放区内的覆盖层改为<b>标题栏下方独立顶条</b>——流光渐变 + 滑动光块动画，加载/识别状态一眼可见，不再被照片列表或提示文字遮挡；多张批量识别时顶条同步显示「第 N/M 张」整体进度。</li>
+      </ul>
       <div class="cl-ver"><b>V6.1</b><span>2026-09-26</span></div>
       <ul>
         <li><b>优化</b> 桌面端「纸质票扫描识别」布局重构：照片导入与识别的完整操作流程（拖放区、照片列表、识别进度、批量操作与状态提示）整体移入<b>独立悬浮窗口</b>——点击卡片内「添加图片」按钮即弹出，默认约 680×480（最小 600×400），带独立标题栏、实时照片数量提示与关闭按钮，按住标题栏可<b>任意拖拽</b>（自动保持在屏幕内，Esc 亦可关闭）；卡片本身只留紧凑入口行，不再出现内容过度压缩、元素挤成一条的问题，票面预览与编辑区一目了然。</li>
@@ -8536,29 +8650,75 @@ let libBase = -1;
 const $ = function(id){ return document.getElementById(id); };
 const zone = $("ocrZone"), fileInput = $("ocrFile"), listEl = $("ocrList"),
     runBtn = $("ocrRun"), addBtn = $("ocrAdd"), statusEl = $("ocrStatus"),
-    progressEl = $("ocrProgress"), progressFill = $("ocrProgressFill"),
-    progressText = $("ocrProgressText"), actionsEl = $("ocrActions"),
+    progressEl = $("ocrTopProg"), progressFill = $("ocrTopFill"),
+    progressText = $("ocrTopText"), actionsEl = $("ocrActions"),
     engineChip = $("ocrEngineChip"),
     engineSel = $("ocrEngineSel");
 
-/* V6.0：引擎选择持久化，默认高精度（PP-OCRv5） */
+/* V6.2：引擎选择持久化（白名单），默认超精度（PP-OCRv6）；
+   联网引擎仅在用户明确选择并确认后才启用，取消则回退本地引擎 */
+var cloudConfirmed = false, lastLocalPref = "paddleV6";
+var ENGINE_MSGS = {
+    paddleV6: "已切换为超精度引擎（PP-OCRv6）：中文识别最准，首次使用需联网下载约 30MB 模型，之后可离线",
+    paddle: "已切换为高精度引擎（PP-OCRv5）：首次使用需联网下载约 16MB 模型，之后可离线",
+    tesseract: "已切换为轻量引擎（Tesseract）：模型约 25MB，速度与精度均衡",
+    cloud: "已切换为联网引擎（OCR.space）：识别时照片将上传云端，免费额度有限，可在下方填写自己的 API Key"
+};
 if(engineSel){
-    engineSel.value = (function(){
-        try{ return localStorage.getItem("__ocrEngine") === "tesseract" ? "tesseract" : "paddle"; }
-        catch(e){ return "paddle"; }
-    })();
+    var savedPref = getOcrEnginePref();
+    engineSel.value = savedPref;
+    if(savedPref !== "cloud") lastLocalPref = savedPref;
     engineSel.addEventListener("change", function(){
-        try{ localStorage.setItem("__ocrEngine", engineSel.value); }catch(e){}
-        showStatus("", engineSel.value === "paddle"
-            ? "已切换为高精度引擎（PP-OCRv5）：中文识别更准，首次使用需联网下载约 16MB 模型，之后可离线"
-            : "已切换为轻量引擎（Tesseract）：模型约 25MB，速度与精度均衡");
+        var v = engineSel.value;
+        if(v === "cloud" && !cloudConfirmed){
+            var ok = false;
+            try{ ok = window.confirm("启用联网引擎（OCR.space）？\n\n票据照片将上传至云端服务器识别（免费额度有限）。\n除该引擎外，本应用所有功能均不上传任何数据。\n\n确认启用吗？"); }catch(e){ ok = false; }
+            if(!ok){
+                engineSel.value = lastLocalPref;
+                try{ localStorage.setItem("__ocrEngine", lastLocalPref); }catch(e){}
+                showStatus("", "已取消联网引擎，保持本地引擎（未上传任何数据）");
+                syncCloudRow();
+                return;
+            }
+            cloudConfirmed = true;
+        }else if(v !== "cloud"){
+            lastLocalPref = v;
+        }
+        try{ localStorage.setItem("__ocrEngine", v); }catch(e){}
+        showStatus("", ENGINE_MSGS[v] || "");
+        syncCloudRow();
     });
 }
+function syncCloudRow(){
+    var row = document.getElementById("ocrCloudRow");
+    if(!row) return;
+    row.hidden = getOcrEnginePref() !== "cloud";
+}
+function getCloudKey(){
+    try{ return (localStorage.getItem("__ocrCloudKey") || "").trim() || "helloworld"; }
+    catch(e){ return "helloworld"; }
+}
+/* 联网 Key 保存（仅本机 localStorage，不上传）；恢复已存 Key 并按引擎偏好显隐该行 */
+(function(){
+    var inp = document.getElementById("ocrCloudKey"), btn = document.getElementById("ocrCloudSave");
+    var saved = getCloudKey();
+    if(inp && saved && saved !== "helloworld") inp.value = saved;
+    if(btn) btn.addEventListener("click", function(){
+        try{ localStorage.setItem("__ocrCloudKey", (inp && inp.value || "").trim()); }catch(e){}
+        showStatus("ok", "联网 Key 已保存到本机浏览器（仅本地存储）");
+    });
+})();
+syncCloudRow();
 
 function showStatus(cls, msg){
     statusEl.className = "pdf-status" + (cls ? " " + cls : "");
     statusEl.style.display = msg ? "block" : "none";
     statusEl.textContent = msg || "";
+}
+/* V6.2：进度顶条驱动——pct 为空时进入滑动光块（不定进度，如引擎/模型加载），否则显示百分比 */
+function setOcrBar(pct){
+    if(pct == null){ progressFill.classList.add("indet"); progressFill.style.width = ""; }
+    else{ progressFill.classList.remove("indet"); progressFill.style.width = pct + "%"; }
 }
 
 /* ---------------- 引擎加载（CDN 多源回退 + IndexedDB 缓存） ---------------- */
@@ -8638,13 +8798,38 @@ var PADDLE_MOD_URLS = [
     "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm",
     "https://fastly.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm"
 ];
-var PADDLE_DET_URL = "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar";
-var PADDLE_REC_URL = "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar";
-var paddleCache = { mod: null, inst: null, loading: null };
+var PADDLE_VARIANTS = {
+    /* V6.2 新默认：PP-OCRv6_small（PaddleOCR 最新一代，PPLCNetV4 骨干，中文识别精度超 PP-OCRv5_server） */
+    paddleV6: {
+        label: "PP-OCRv6",
+        ocrVersion: "PP-OCRv6",
+        detName: "PP-OCRv6_small_det",
+        recName: "PP-OCRv6_small_rec",
+        detUrl: "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+        recUrl: "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+        chip: "PP-OCRv6·超精度",
+        size: "30MB"
+    },
+    /* V6.0 原引擎：PP-OCRv5_mobile（均衡，体积更小） */
+    paddle: {
+        label: "PP-OCRv5",
+        ocrVersion: "PP-OCRv5",
+        detName: "PP-OCRv5_mobile_det",
+        recName: "PP-OCRv5_mobile_rec",
+        detUrl: "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+        recUrl: "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+        chip: "PP-OCRv5·高精度",
+        size: "16MB"
+    }
+};
+var paddleMod = null, paddleModLoading = null;   // SDK 模块全变体共享
+var paddleCache = {};                            // vk → { inst, loading }（模型 tar 按 URL 各自缓存于 IndexedDB）
 
 function getOcrEnginePref(){
-    try{ return localStorage.getItem("__ocrEngine") === "tesseract" ? "tesseract" : "paddle"; }
-    catch(e){ return "paddle"; }
+    try{
+        var v = localStorage.getItem("__ocrEngine");
+        return (v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud") ? v : "paddleV6";
+    }catch(e){ return "paddleV6"; }
 }
 function dynImport(u){
     try{ var f = new Function("u", "return import(u);"); return f(u); }
@@ -8712,54 +8897,64 @@ function cachedPaddleTar(url, onPhase){
         });
     });
 }
-async function ensurePaddle(onPhase){
-    if(paddleCache.inst) return paddleCache.inst;
-    if(paddleCache.loading) return paddleCache.loading;
-    paddleCache.loading = (async function(){
-        if(!paddleCache.mod){
-            var mod = null, lastErr = null;
-            for(var i = 0; i < PADDLE_MOD_URLS.length && !mod; i++){
-                try{ mod = await dynImport(PADDLE_MOD_URLS[i]); }
-                catch(err){ lastErr = err; }
-            }
-            if(!mod) throw lastErr || new Error("引擎库加载失败");
-            paddleCache.mod = mod;
+async function ensurePaddleMod(){
+    if(paddleMod) return paddleMod;
+    if(paddleModLoading) return paddleModLoading;
+    paddleModLoading = (async function(){
+        var mod = null, lastErr = null;
+        for(var i = 0; i < PADDLE_MOD_URLS.length && !mod; i++){
+            try{ mod = await dynImport(PADDLE_MOD_URLS[i]); }
+            catch(err){ lastErr = err; }
         }
-        if(onPhase) onPhase("准备高精度模型（首次约 16MB，之后离线可用）…");
+        if(!mod) throw lastErr || new Error("引擎库加载失败");
+        paddleMod = mod;
+        return mod;
+    })();
+    paddleModLoading.catch(function(){ paddleModLoading = null; });
+    return paddleModLoading;
+}
+async function ensurePaddle(vk, onPhase){
+    var V = PADDLE_VARIANTS[vk] || PADDLE_VARIANTS.paddleV6;
+    var C = paddleCache[vk] || (paddleCache[vk] = { inst: null, loading: null });
+    if(C.inst) return C.inst;
+    if(C.loading) return C.loading;
+    C.loading = (async function(){
+        var mod = await ensurePaddleMod();
+        if(onPhase) onPhase("准备「" + V.label + "」模型（首次约 " + V.size + "，之后离线可用）…");
         var detBuf = null, recBuf = null;
         try{
-            detBuf = await cachedPaddleTar(PADDLE_DET_URL, onPhase);
-            recBuf = await cachedPaddleTar(PADDLE_REC_URL, onPhase);
+            detBuf = await cachedPaddleTar(V.detUrl, onPhase);
+            recBuf = await cachedPaddleTar(V.recUrl, onPhase);
         }catch(e){ detBuf = null; /* 自建缓存失败走 SDK 默认下载 */ }
         var opts;
         if(detBuf && recBuf){
             opts = {
-                textDetectionModelName: "PP-OCRv5_mobile_det",
+                textDetectionModelName: V.detName,
                 textDetectionModelAsset: { url: URL.createObjectURL(new Blob([detBuf], { type: "application/x-tar" })) },
-                textRecognitionModelName: "PP-OCRv5_mobile_rec",
+                textRecognitionModelName: V.recName,
                 textRecognitionModelAsset: { url: URL.createObjectURL(new Blob([recBuf], { type: "application/x-tar" })) },
                 ortOptions: { backend: "wasm" }
             };
         }else{
-            opts = { lang: "ch", ocrVersion: "PP-OCRv5", ortOptions: { backend: "wasm" } };
+            opts = { lang: "ch", ocrVersion: V.ocrVersion, ortOptions: { backend: "wasm" } };
         }
         try{
-            return await paddleCache.mod.PaddleOCR.create(opts);
+            return await mod.PaddleOCR.create(opts);
         }catch(err){
             if(opts.textDetectionModelAsset){
                 console.warn("[OCR] 自定义模型资产初始化失败，改走 SDK 默认下载", err);
-                return await paddleCache.mod.PaddleOCR.create({ lang: "ch", ocrVersion: "PP-OCRv5", ortOptions: { backend: "wasm" } });
+                return await mod.PaddleOCR.create({ lang: "ch", ocrVersion: V.ocrVersion, ortOptions: { backend: "wasm" } });
             }
             throw err;
         }
     })();
-    paddleCache.loading.then(function(inst){
-        paddleCache.inst = inst;
+    C.loading.then(function(inst){
+        C.inst = inst;
     }, function(err){
-        console.error("[OCR] PP-OCRv5 引擎加载失败", err);
-        paddleCache.loading = null;        // 失败后允许重试
+        console.error("[OCR] " + V.label + " 引擎加载失败", err);
+        C.loading = null;        // 失败后允许重试
     });
-    return paddleCache.loading;
+    return C.loading;
 }
 /* PP-OCRv5 检出框 → 仿 Tesseract 纯文本（y 中心行聚类 + 行内 x 排序），复用既有解析管线 */
 function paddleItemsToText(its){
@@ -8792,9 +8987,9 @@ function paddleItemsToText(its){
         return ln.parts.sort(function(a, b){ return a.x0 - b.x0; }).map(function(m){ return m.text; }).join(" ");
     }).join("\n");
 }
-function paddleEngine(inst){
+function paddleEngine(inst, name){
     return {
-        name: "PP-OCRv5",
+        name: name || "PP-OCRv5",
         pre: function(cv){ return cv; },   // PP 模型面向自然图像训练，跳过 Sauvola 二值化
         recognize: async function(cv){
             const r = await inst.predict(cv);
@@ -8818,18 +9013,97 @@ function tesseractEngine(worker){
         recognize: function(cv){ return worker.recognize(cv); }
     };
 }
+/* ---------------- V6.2 联网引擎（OCR.space 免费云 OCR，备选） ----------------
+   当且仅当用户在引擎下拉中明确选择「联网引擎」并确认后才发起网络请求；
+   识别时二次确认（会话级一次），取消则自动回退本地引擎，不上传任何数据。 */
+function shrinkForCloud(cv){
+    const w = cv.width || cv.naturalWidth, h = cv.height || cv.naturalHeight;
+    const s = Math.min(1, 1400 / Math.max(w, h));
+    const c2 = document.createElement("canvas");
+    c2.width = Math.max(1, Math.round(w * s)); c2.height = Math.max(1, Math.round(h * s));
+    c2.getContext("2d").drawImage(cv, 0, 0, c2.width, c2.height);
+    return c2.toDataURL("image/jpeg", 0.85);
+}
+async function cloudEngine(onPhase){
+    if(!cloudConfirmed){
+        var ok = false;
+        try{ ok = window.confirm("即将使用联网引擎（OCR.space）：票据照片将上传至云端服务器识别。\n除该引擎外，本应用所有功能均不上传任何数据。\n\n确定继续吗？（取消则改用本地引擎）"); }catch(e){ ok = false; }
+        if(!ok){
+            showStatus("", "已取消联网识别（未上传任何数据），自动改用本地引擎");
+            return null;
+        }
+        cloudConfirmed = true;
+    }
+    if(onPhase) onPhase("联网识别中（上传压缩图至 OCR.space）…");
+    return {
+        name: "OCR.space·云",
+        pre: function(cv){ return cv; },
+        recognize: async function(cv){
+            const dataUrl = shrinkForCloud(cv);
+            const body = "base64Image=" + encodeURIComponent(dataUrl) +
+                "&apikey=" + encodeURIComponent(getCloudKey()) +
+                "&language=chs&OCREngine=2&isTable=true&scale=true";
+            /* 30s 超时：网络被墙/服务无响应时中止请求并报错，不无限悬挂 */
+            const ctrl = ("AbortController" in window) ? new AbortController() : null;
+            const timer = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 30000) : null;
+            let res;
+            try{
+                res = await fetch("https://api.ocr.space/parse/image", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body,
+                    signal: ctrl ? ctrl.signal : undefined
+                });
+            }catch(err){
+                if(timer) clearTimeout(timer);
+                throw new Error(/abort/i.test(String((err && err.name) || err)) ? "云端请求超时（30s），请检查网络后重试" : "云端请求失败：" + ((err && err.message) || err));
+            }
+            if(timer) clearTimeout(timer);
+            if(!res.ok) throw new Error("云端服务 HTTP " + res.status);
+            const j = await res.json();
+            if(j.IsErroredOnProcessing){
+                var em = j.ErrorMessage;
+                throw new Error(typeof em === "string" ? em : (em && em[0]) || "云端识别失败");
+            }
+            const txt = (((j.ParsedResults || [])[0]) || {}).ParsedText || "";
+            /* 云端不返回可靠置信度：按有效字符量给保守估计（与本地 ocrScore 同思路） */
+            const cjk = (txt.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const aln = (txt.match(/[A-Za-z0-9]/g) || []).length;
+            const conf = Math.min(95, Math.round(Math.min(1, (cjk * 2 + aln) / 60) * 95));
+            return { data: { text: txt, confidence: conf } };
+        }
+    };
+}
 async function getEngine(onPhase){
-    if(getOcrEnginePref() === "paddle"){
-        try{
-            const inst = await ensurePaddle(function(msg){ if(onPhase) onPhase(msg); });
+    var pref = getOcrEnginePref();
+    if(pref === "cloud"){
+        var eng = null;
+        try{ eng = await cloudEngine(onPhase); }
+        catch(err){
+            console.warn("[OCR] 联网引擎失败，回退本地引擎", err);
+            if(onPhase) onPhase("联网引擎不可用，改用本地引擎…");
+        }
+        if(eng){
             if(engineChip){
                 engineChip.hidden = false;
-                engineChip.textContent = "PP-OCRv5·高精度";
+                engineChip.textContent = "OCR.space·云";
                 engineChip.classList.add("ok");
             }
-            return paddleEngine(inst);
+            return eng;
+        }
+        pref = "paddleV6";                     // 回退本地超精度
+    }
+    if(pref === "paddleV6" || pref === "paddle"){
+        try{
+            const inst = await ensurePaddle(pref, function(msg){ if(onPhase) onPhase(msg); });
+            if(engineChip){
+                engineChip.hidden = false;
+                engineChip.textContent = PADDLE_VARIANTS[pref].chip;
+                engineChip.classList.add("ok");
+            }
+            return paddleEngine(inst, PADDLE_VARIANTS[pref].label);
         }catch(err){
-            console.warn("[OCR] PP-OCRv5 引擎加载失败，回退 Tesseract", err);
+            console.warn("[OCR] " + PADDLE_VARIANTS[pref].label + " 引擎加载失败，回退 Tesseract", err);
             if(onPhase) onPhase("高精度引擎不可用，改用轻量引擎…");
         }
     }
@@ -9027,16 +9301,215 @@ function cropBitmap(src, r){
     cx.drawImage(src, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
     return cv;
 }
+/* ---------------- V6.2 拍摄角度自动矫正（透视变换） ----------------
+   检测票面四角（Otsu 二值化 + 最大连通域 + 四极值角点），经单应变换拉正，
+   并按标准火车票票幅比例（85.6mm:54mm ≈ 1.585）裁剪输出 1600px 宽图像。
+   拍摄角度不正/透视畸变的照片经此矫正后识别率显著提升；
+   检测失败、票形可疑或画面已端正时返回 null（走原有裁剪/识别管线）。 */
+function solveHomography8(A, b){
+    for(let i = 0; i < 8; i++){
+        let piv = i;
+        for(let r = i + 1; r < 8; r++) if(Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+        if(Math.abs(A[piv][i]) < 1e-12) return null;
+        if(piv !== i){ const t = A[i]; A[i] = A[piv]; A[piv] = t; const tb = b[i]; b[i] = b[piv]; b[piv] = tb; }
+        for(let r = 0; r < 8; r++){
+            if(r === i) continue;
+            const f = A[r][i] / A[i][i];
+            for(let c = i; c < 8; c++) A[r][c] -= f * A[i][c];
+            b[r] -= f * b[i];
+        }
+    }
+    const h = new Float64Array(8);
+    for(let i = 0; i < 8; i++) h[i] = b[i] / A[i][i];
+    return h;
+}
+/* 单位正方形 (0,0)-(1,1) 四角 → 任意四边形的单应（8 参数） */
+function homographyUnitToQuad(q){
+    const uv = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    const A = [], b = [0, 0, 0, 0, 0, 0, 0, 0];
+    for(let i = 0; i < 4; i++){
+        const u = uv[i][0], v = uv[i][1], x = q[i][0], y = q[i][1];
+        A.push([u, v, 1, 0, 0, 0, -u * x, -v * x]); b[i * 2] = x;
+        A.push([0, 0, 0, u, v, 1, -u * y, -v * y]); b[i * 2 + 1] = y;
+    }
+    return solveHomography8(A, b);
+}
+function deskewTicket(src){
+    function dbg(r){ deskewTicket.lastReason = r; return null; }   // V6.2 诊断探针
+    deskewTicket.lastReason = "ok";
+    const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+    if(!w || !h) return dbg("empty-src");
+    /* ① 降采样快检（360px） */
+    const S = 360;
+    const sc = Math.min(1, S / Math.max(w, h));
+    const sw = Math.max(16, Math.round(w * sc)), sh = Math.max(16, Math.round(h * sc));
+    const cv = document.createElement("canvas");
+    cv.width = sw; cv.height = sh;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, sw, sh);
+    cx.drawImage(src, 0, 0, sw, sh);
+    const d = cx.getImageData(0, 0, sw, sh).data;
+    const n = sw * sh;
+    const gray = new Uint8Array(n), hist = new Uint32Array(256);
+    for(let i = 0, j = 0; i < n; i++, j += 4){
+        const v = (d[j] * 299 + d[j + 1] * 587 + d[j + 2] * 114) / 1000 | 0;
+        gray[i] = v; hist[v]++;
+    }
+    /* ② Otsu 全局阈值 */
+    let sum = 0;
+    for(let v = 0; v < 256; v++) sum += v * hist[v];
+    let sumB = 0, wB = 0, bv = -1, th = 128;
+    for(let v = 0; v < 256; v++){
+        wB += hist[v]; if(!wB) continue;
+        const wF = n - wB; if(!wF) break;
+        sumB += v * hist[v];
+        const df = sumB / wB - (sum - sumB) / wF;
+        const va = wB * wF * df * df;
+        if(va > bv){ bv = va; th = v; }
+    }
+    /* 掩码极性：票面常比深色桌面亮；亮像素占比过高（浅色桌面）则反转，保证 mask=1 为票面 */
+    let bright = 0;
+    for(let v = th + 1; v < 256; v++) bright += hist[v];
+    const fgHigh = bright <= n * 0.62;
+    let mask = new Uint8Array(n);
+    for(let i = 0; i < n; i++) mask[i] = (fgHigh ? gray[i] > th : gray[i] <= th) ? 1 : 0;
+    /* ③ 侵蚀 2 轮剥离细噪声/文字孔洞边缘 */
+    for(let round = 0; round < 2; round++){
+        const er = new Uint8Array(n);
+        for(let y = 1; y < sh - 1; y++){
+            const off = y * sw;
+            for(let x = 1; x < sw - 1; x++){
+                const i = off + x;
+                er[i] = (mask[i] && mask[i - 1] && mask[i + 1] && mask[i - sw] && mask[i + sw]) ? 1 : 0;
+            }
+        }
+        mask = er;
+    }
+    /* ④ 最大连通域（4 邻域 BFS）：只保留票面主体，排除杂物 */
+    const label = new Int32Array(n), queue = new Int32Array(n);
+    let bestId = 0, bestCnt = 0, id = 0;
+    for(let s = 0; s < n; s++){
+        if(!mask[s] || label[s]) continue;
+        id++; let cnt = 0, qh = 0, qt = 0;
+        queue[qt++] = s; label[s] = id;
+        while(qh < qt){
+            const p = queue[qh++]; cnt++;
+            const px = p % sw, py = (p / sw) | 0;
+            if(px > 0 && mask[p - 1] && !label[p - 1]){ label[p - 1] = id; queue[qt++] = p - 1; }
+            if(px < sw - 1 && mask[p + 1] && !label[p + 1]){ label[p + 1] = id; queue[qt++] = p + 1; }
+            if(py > 0 && mask[p - sw] && !label[p - sw]){ label[p - sw] = id; queue[qt++] = p - sw; }
+            if(py < sh - 1 && mask[p + sw] && !label[p + sw]){ label[p + sw] = id; queue[qt++] = p + sw; }
+        }
+        if(cnt > bestCnt){ bestCnt = cnt; bestId = id; }
+    }
+    if(!bestId || bestCnt < n * 0.08) return dbg("ticket<8%");      // 票面占比过低，检测不可信
+    /* ⑤ 四极值角点：TL=min(x+y)、BR=max(x+y)、TR=max(x−y)、BL=min(x−y) */
+    let tl = -1, tr = -1, br = -1, bl = -1, smin = 1e9, smax = -1e9, dmin = 1e9, dmax = -1e9;
+    for(let y = 0; y < sh; y++){
+        const off = y * sw;
+        for(let x = 0; x < sw; x++){
+            if(label[off + x] !== bestId) continue;
+            const s = x + y, df = x - y;
+            if(s < smin){ smin = s; tl = off + x; }
+            if(s > smax){ smax = s; br = off + x; }
+            if(df > dmax){ dmax = df; tr = off + x; }
+            if(df < dmin){ dmin = df; bl = off + x; }
+        }
+    }
+    if(tl < 0 || tr < 0 || br < 0 || bl < 0) return dbg("no-corners");
+    let P = [[tl % sw, (tl / sw) | 0], [tr % sw, (tr / sw) | 0], [br % sw, (br / sw) | 0], [bl % sw, (bl / sw) | 0]];
+    function dist(a, b){ const dx = a[0] - b[0], dy = a[1] - b[1]; return Math.hypot(dx, dy); }
+    /* ⑥ 竖拍横票：长边若为竖直方向，旋转角点标注使输出转为横向 */
+    if(dist(P[1], P[2]) > dist(P[0], P[1]) * 1.05) P = [P[1], P[2], P[3], P[0]];
+    const wTop = dist(P[0], P[1]), wBot = dist(P[3], P[2]);
+    const hLeft = dist(P[0], P[3]), hRight = dist(P[1], P[2]);
+    const aw = Math.max(wTop, wBot), ah = Math.max(hLeft, hRight);
+    if(aw < 8 || ah < 8) return dbg("too-small");
+    if(aw / ah > 2.1 || aw / ah < 1.25) return dbg("aspect:" + (aw / ah).toFixed(2));                      // 非标准票比例（1.585）
+    if(Math.min(wTop, wBot) / Math.max(wTop, wBot) < 0.65) return dbg("opp-edge-w");   // 对边差异过大，四边形退化
+    if(Math.min(hLeft, hRight) / Math.max(hLeft, hRight) < 0.65) return dbg("opp-edge-h");
+    /* ⑦ 凸性校验（四角必须构成凸四边形且方向一致） */
+    let sign = 0;
+    for(let i = 0; i < 4; i++){
+        const a = P[i], b2 = P[(i + 1) % 4], c = P[(i + 2) % 4];
+        const cr = (b2[0] - a[0]) * (c[1] - b2[1]) - (b2[1] - a[1]) * (c[0] - b2[0]);
+        if(Math.abs(cr) < 1e-6) return dbg("degenerate");
+        const sg = cr > 0 ? 1 : -1;
+        if(!sign) sign = sg; else if(sg !== sign) return dbg("non-convex");
+    }
+    /* ⑧ 已端正（四边形与轴对齐包围盒几乎重合，偏差 <2%）则无需矫正 */
+    let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+    for(let i = 0; i < 4; i++){
+        minx = Math.min(minx, P[i][0]); maxx = Math.max(maxx, P[i][0]);
+        miny = Math.min(miny, P[i][1]); maxy = Math.max(maxy, P[i][1]);
+    }
+    const quadArea = Math.abs(
+        P[0][0] * (P[1][1] - P[3][1]) + P[1][0] * (P[2][1] - P[0][1]) +
+        P[2][0] * (P[3][1] - P[1][1]) + P[3][0] * (P[0][1] - P[2][1])
+    ) / 2;
+    const bboxArea = (maxx - minx + 1) * (maxy - miny + 1);
+    if(bboxArea > 0 && quadArea / bboxArea > 0.98) return dbg("already-straight");
+    /* ⑨ 原分辨率（上限 2400px）双线性逆映射到标准票幅 1600×1009 */
+    const MAXSRC = 2400;
+    const ssc = Math.min(1, MAXSRC / Math.max(w, h));
+    const rw = Math.max(1, Math.round(w * ssc)), rh = Math.max(1, Math.round(h * ssc));
+    const rc = document.createElement("canvas");
+    rc.width = rw; rc.height = rh;
+    const rcx = rc.getContext("2d", { willReadFrequently: true });
+    rcx.fillStyle = "#fff"; rcx.fillRect(0, 0, rw, rh);
+    rcx.drawImage(src, 0, 0, rw, rh);
+    const rd = rcx.getImageData(0, 0, rw, rh).data;
+    const k = ssc / sc;                                    // 小图坐标 → 采样图坐标
+    const q = [[P[0][0] * k, P[0][1] * k], [P[1][0] * k, P[1][1] * k], [P[2][0] * k, P[2][1] * k], [P[3][0] * k, P[3][1] * k]];
+    const Hm = homographyUnitToQuad(q);
+    if(!Hm) return dbg("homography-fail");
+    const OW = 1600, OH = Math.round(1600 * 54 / 85.6);    // 1009，标准票幅比例
+    const out = document.createElement("canvas");
+    out.width = OW; out.height = OH;
+    const ox = out.getContext("2d", { willReadFrequently: true });
+    const od = ox.createImageData(OW, OH), arr = od.data;
+    for(let Y = 0; Y < OH; Y++){
+        const v = (Y + 0.5) / OH;
+        for(let X = 0; X < OW; X++){
+            const u = (X + 0.5) / OW;
+            const den = Hm[6] * u + Hm[7] * v + 1;
+            const sx = (Hm[0] * u + Hm[1] * v + Hm[2]) / den;
+            const sy = (Hm[3] * u + Hm[4] * v + Hm[5]) / den;
+            /* 边缘夹取采样（票缘向外微扩 1px，避免矫正边出现白缝） */
+            const cxq = Math.min(rw - 1, Math.max(0, sx)), cyq = Math.min(rh - 1, Math.max(0, sy));
+            const x0 = Math.min(rw - 2, cxq | 0), y0 = Math.min(rh - 2, cyq | 0);
+            const fx = cxq - x0, fy = cyq - y0;
+            const i00 = (y0 * rw + x0) * 4;
+            const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+            const o = (Y * OW + X) * 4;
+            arr[o]     = rd[i00]     * w00 + rd[i00 + 4]     * w10 + rd[i00 + rw * 4]     * w01 + rd[i00 + rw * 4 + 4]     * w11;
+            arr[o + 1] = rd[i00 + 1] * w00 + rd[i00 + 5]     * w10 + rd[i00 + rw * 4 + 1] * w01 + rd[i00 + rw * 4 + 5]     * w11;
+            arr[o + 2] = rd[i00 + 2] * w00 + rd[i00 + 6]     * w10 + rd[i00 + rw * 4 + 2] * w01 + rd[i00 + rw * 4 + 6]     * w11;
+            arr[o + 3] = 255;
+        }
+    }
+    ox.putImageData(od, 0, 0);
+    return { cv: out, ratio: aw / ah };
+}
 async function recognizeItem(it, worker, onPhase){
     const src = await fileToBitmap(it.file);
     let base = src;
+    it.rectified = false; it.cropped = false;
     try{
-        // ① 票面区域检测裁剪：把票面从深色背景中裁出，识别分辨率全部让给票面
+        // ① V6.2 拍摄角度自动矫正：检测票面四角透视拉正并按标准票幅（85.6:54）裁剪，
+        //    歪斜照片识别率大幅提升；矫正成功则列表缩略图同步为矫正后的票面
         try{
-            const r = detectCrop(src);
-            if(r){ base = cropBitmap(src, r); it.cropped = true; }
-        }catch(e){ /* 裁剪失败按原图识别 */ }
-        // ② 方向探测：按裁剪后票面宽高比缩小候选方向（磁卡票横放约 1.59:1），
+            const dk = deskewTicket(src);
+            if(dk && dk.cv){ base = dk.cv; it.rectified = true; }
+        }catch(e){ /* 矫正失败按原图识别 */ }
+        // ①' 未矫正时退回票面区域检测裁剪：把票面从深色背景中裁出，识别分辨率全部让给票面
+        if(!it.rectified){
+            try{
+                const r = detectCrop(src);
+                if(r){ base = cropBitmap(src, r); it.cropped = true; }
+            }catch(e){ /* 裁剪失败按原图识别 */ }
+        }
+        // ② 方向探测：按矫正/裁剪后票面宽高比缩小候选方向（磁卡票横放约 1.59:1），
         //    竖矩形只在 90°/270° 中选，横矩形只在 0°/180° 中选，避免整图噪声导致误判
         const PROBE = 640;
         const bw = base.width, bh = base.height;
@@ -9058,6 +9531,14 @@ async function recognizeItem(it, worker, onPhase){
         it.conf = Math.round(res.data.confidence || 0);
         it.parsed = parseOcrText(it.text);
         it.status = "done";
+        // ③ V6.2：列表缩略图（红框预览区）同步为矫正/裁剪后的票面，不再显示原始歪斜照片
+        try{
+            const th = drawRotated(base, it.rotDeg || 0, 480);
+            it.thumbUrl2 = th.toDataURL("image/jpeg", 0.82);
+            const timg = it.el && it.el.querySelector(".ocr-thumb");
+            if(timg) timg.src = it.thumbUrl2;
+            if(it.el && it.rectified) it.el.classList.add("rectified");
+        }catch(e){}
         return true;
     } finally {
         if(src && src.close){ try{ src.close(); }catch(e){} }
@@ -9373,7 +9854,7 @@ function updateChip(it){
     else if(it.status === "done"){
         if(it.confirmed){ txt = "已生成行程" + (it.conf ? " · " + it.conf + "%" : ""); cls += " ok"; }
         else{
-            txt = "已识别" + (it.conf ? " · " + it.conf + "%" : "") + (it.edited ? " · 已修改" : "") + (it.rotDeg ? " · 转" + it.rotDeg + "°" : "");
+            txt = "已识别" + (it.conf ? " · " + it.conf + "%" : "") + (it.rectified ? " · 已矫正" : "") + (it.edited ? " · 已修改" : "") + (it.rotDeg ? " · 转" + it.rotDeg + "°" : "");
         }
     }
     it.chip.className = cls;
@@ -9426,12 +9907,15 @@ function renderFields(it){
 function buildItemNode(it){
     const box = document.createElement("div");
     box.className = "ocr-item" + (it.status === "error" ? " err" : "") + (it.confirmed ? " done" : "");
+    const wrapT = document.createElement("div");
+    wrapT.className = "ocr-thumb-wrap";
     const img = document.createElement("img");
     img.className = "ocr-thumb";
     img.alt = it.name || "";
     it.thumbUrl = URL.createObjectURL(it.file);
     img.src = it.thumbUrl;
-    box.appendChild(img);
+    wrapT.appendChild(img);
+    box.appendChild(wrapT);
     const main = document.createElement("div");
     main.className = "ocr-main";
     box.appendChild(main);
@@ -9517,7 +10001,7 @@ async function runAll(){
     running = true;
     syncButtons();
     progressEl.hidden = false;
-    progressFill.style.width = "0%";
+    setOcrBar(null);
     let engine;
     try{
         engine = await getEngine(function(msg){
@@ -9534,7 +10018,7 @@ async function runAll(){
     let okN = 0, errN = 0;
     for(let i = 0; i < todo.length; i++){
         const it = todo[i];
-        progressFill.style.width = Math.round(i / todo.length * 100) + "%";
+        setOcrBar(Math.round(i / todo.length * 100));
         progressText.textContent = "识别中 " + (i + 1) + "/" + todo.length + " · " + (it.name || "");
         it.status = "busy";
         updateChip(it);
@@ -9544,7 +10028,7 @@ async function runAll(){
             it.el.classList.remove("err");
             renderFields(it);
             okN++;
-            console.log("[OCR] " + it.name + " 完成 " + (Date.now() - t0) + "ms conf=" + it.conf + " rot=" + it.rotDeg + "°");
+            console.log("[OCR] " + it.name + " 完成 " + (Date.now() - t0) + "ms conf=" + it.conf + " rot=" + it.rotDeg + "° rect=" + !!it.rectified);
         }catch(err){
             console.error("[OCR] " + it.name + " 失败", err);
             it.status = "error";
@@ -9553,7 +10037,7 @@ async function runAll(){
         }
         updateChip(it);
     }
-    progressFill.style.width = "100%";
+    setOcrBar(100);
     progressText.textContent = "完成";
     setTimeout(function(){ progressEl.hidden = true; }, 900);
     running = false;
@@ -9567,7 +10051,7 @@ async function reRun(it){
     running = true;
     syncButtons();
     progressEl.hidden = false;
-    progressFill.style.width = "0%";
+    setOcrBar(null);
     try{
         const engine = await getEngine(function(msg){
             progressText.textContent = msg;
@@ -9652,10 +10136,11 @@ window.__ocrAddFiles = addFiles;
 window.__ocrApplyItem = applyItem;
 window.__ocrApplyAll = applyAll;
 window.__ocrGetWorker = getWorker;
+window.__deskew = deskewTicket;              // V6.2：透视矫正独立验证（传入 img/canvas/File）
+window.__ocrGetEngine = getEngine;           // V6.2：引擎选择/回退链验证
 window.__ocrState = function(){
     return { running: running, count: items.length, statuses: items.map(it => it.status) };
-};
-})();
+};})();
 
 /* ==========================================================================
    V6.1 · OCR 悬浮窗管理器
@@ -9715,10 +10200,14 @@ function clampPos(){
     const l = parseFloat(win.style.left), t = parseFloat(win.style.top);
     if(isNaN(l) || isNaN(t)) return;
     const w = win.offsetWidth, h = win.offsetHeight;
-    const minL = 8 - w + 80;
-    const maxL = w <= window.innerWidth - 16 ? window.innerWidth - w - 8 : window.innerWidth - 88;
-    const minT = 8;
-    const maxT = h <= window.innerHeight - 16 ? window.innerHeight - h - 8 : window.innerHeight - 44;
+    /* V6.2 修复：放得下时 minL/minT 也应夹在视口内（8px 边距）——
+       旧版 minL 固定为抓回区边界，放得下的窗口也能被拖到只剩 80px 露出 */
+    const fitsX = w <= window.innerWidth - 16;
+    const fitsY = h <= window.innerHeight - 16;
+    const minL = fitsX ? 8 : 8 - w + 80;
+    const maxL = fitsX ? window.innerWidth - w - 8 : window.innerWidth - 88;
+    const minT = fitsY ? 8 : 8 - h + 44;
+    const maxT = fitsY ? window.innerHeight - h - 8 : window.innerHeight - 44;
     win.style.left = Math.min(Math.max(l, minL), Math.max(maxL, minL)) + "px";
     win.style.top  = Math.min(Math.max(t, minT), Math.max(maxT, minT)) + "px";
 }
