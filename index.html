@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2</title>
+<title>12306火车票票根编辑器V6.2.1</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -1275,6 +1275,98 @@ body::after {
   box-shadow: 0 10px 26px var(--accent-glow);
 }
 .card-pdf .pdf-zone:active { transform: scale(0.985); }
+/* V6.2.1：OCR 卡片参照 PDF 导入布局（拖放区 + 按钮列）——复用同一套 pdf 样式语言 */
+.card-ocr .pdf-flex {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+}
+.card-ocr .pdf-btns {
+  flex: 1 1 0;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+/* 三个按钮在 OCR 卡片内与左侧拖放区等高、各占三分之一高（清除按钮视觉降级） */
+.card-ocr .pdf-btns .btn-add,
+.card-ocr .pdf-btns .btn-run,
+.card-ocr .pdf-btns .ocr-card-clear {
+  flex: 1 1 0;
+  align-self: stretch;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  margin-top: 0;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.card-ocr .pdf-btns .ocr-card-clear {
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  background: transparent;
+}
+.card-ocr .pdf-btns .ocr-card-clear:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-tint);
+}
+.card-ocr .pdf-zone {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+  padding: 9px 11px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--field-bg);
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast), transform var(--dur-fast) var(--spring), box-shadow var(--dur-fast);
+  overflow: hidden;
+  outline: none;
+}
+.card-ocr .pdf-zone:focus-visible {
+  border-color: var(--accent);
+  border-style: solid;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.card-ocr .pdf-zone::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, transparent 0%, var(--accent-glow) 25%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+  pointer-events: none;
+}
+.card-ocr .pdf-zone.dragover::before,
+.card-ocr .pdf-zone:hover::before {
+  opacity: 1;
+  animation: spinSlow 5s linear infinite;
+}
+.card-ocr .pdf-zone:hover,
+.card-ocr .pdf-zone.dragover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.card-ocr .pdf-zone.dragover {
+  border-style: solid;
+  background: var(--accent-tint);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px var(--accent-glow);
+}
+.card-ocr .pdf-zone:active { transform: scale(0.985); }
+.card-ocr .pdf-status { margin-top: 8px; }
 .pdf-zone .pdf-icon {
   font-size: 20px;
   line-height: 1;
@@ -2419,8 +2511,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2</h1>
-        <p>阿杰同学 · V6.2 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.1</h1>
+        <p>阿杰同学 · V6.2.1 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2539,22 +2631,31 @@ window.__exportProgress = (function(){
             <span class="sec-no">03</span>
             <h2>纸质票扫描识别</h2>
             <div class="header-meta">
-              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：超精度 = PP-OCRv6 深度学习模型（PaddleOCR 最新一代，首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网 = OCR.space 免费云识别（仅在明确选择并确认后才联网，可在识别窗口内配置 API Key）">
+              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：超精度 = PP-OCRv6 深度学习模型（PaddleOCR 最新一代，首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网·OCR.space = 免费云识别；联网·百度 = 百度智能云（需自建应用 Key，标准版免费 500 次/日）。联网引擎仅在明确选择并确认后才联网">
                 <option value="paddleV6">超精度引擎</option>
                 <option value="paddle">高精度引擎</option>
                 <option value="tesseract">轻量引擎</option>
-                <option value="cloud">联网引擎（云）</option>
+                <option value="cloud">联网引擎（OCR.space）</option>
+                <option value="cloudBaidu">联网引擎（百度）</option>
               </select>
               <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
             </div>
           </div>
           <input type="file" id="ocrFile" accept="image/*" multiple class="ocr-input">
-          <!-- V6.1：桌面端紧凑入口行——完整操作流程（拖放区/列表/进度/批量操作）整体移入
-               独立悬浮窗 #ocrWin（挂载于页面顶层，避免卡片 transform/overflow 裁剪），卡片内不再拥挤 -->
-          <div class="ocr-entry" id="ocrEntry">
-            <button class="btn-run btn-extract" id="ocrOpenWin" type="button" title="打开图片添加与识别窗口（独立悬浮窗，可拖拽）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加图片</button>
-            <span class="ocr-entry-hint">在独立窗口中导入照片并识别 · <b id="ocrEntryCount">尚未添加照片</b></span>
+          <!-- V6.2.1：参照 PDF 导入卡片样式重排——虚线拖放区 + 按钮行（添加/开始识别/清除已导入图片）+ 状态条；
+               照片列表、字段核对、生成行程仍在独立悬浮窗 #ocrWin 内进行（桌面端可拖拽） -->
+          <div class="pdf-flex">
+            <div class="pdf-zone ocr-zone-card" id="ocrCardZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
+              <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
+              <div class="pdf-hint">点击或拖入 <strong>纸质火车票照片</strong><br>添加后自动矫正与标准票幅裁剪</div>
+            </div>
+            <div class="pdf-btns">
+              <button class="btn btn-add" id="ocrCardAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
+              <button class="btn-run btn-extract" id="ocrCardRun" disabled>开始识别</button>
+              <button class="btn btn-mini ocr-card-clear" id="ocrCardClear" type="button" title="清除当前已导入的全部照片与识别结果（已生成的行程不受影响）"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清除已导入图片</button>
+            </div>
           </div>
+          <div class="pdf-status" id="ocrCardStatus"></div>
         </div>
 
       </div>
@@ -5293,6 +5394,10 @@ window.batchSaveAll = function(){
   var clearBtn = document.getElementById("pdfClear");
   clearBtn.addEventListener("click", function(){
     if(!confirm("确定清除当前所有填写内容吗？")) return;
+    /* V6.2.1：置确认旗标供第二个处理器（PDF/OCR 导入状态清理）识别——
+       旧版以按钮文案「已清除」判断是否确认，V6.0 按钮图标化后该判断永久失效，
+       导致 PDF 文件与 OCR 扫描图片的清理逻辑从未执行 */
+    window.__clearConfirmed = true;
     // 恢复各输入框的 HTML 默认值（value 属性），无默认值的清空
     document.querySelectorAll("input").forEach(function(el){
       if(el.type === "file"){ el.value = ""; return; }
@@ -5934,13 +6039,16 @@ window.batchSaveAll = function(){
     };
   })();
 
-  /* 5.4 一键清除：额外清空 PDF 导入模块的导入状态与摘要（原有重置逻辑保持不变） */
+  /* 5.4 一键清除：额外清空 PDF 导入模块的导入状态与摘要（原有重置逻辑保持不变）。
+     V6.2.1：确认门控由「按钮文案==已清除」改为 window.__clearConfirmed 旗标
+     （V6.0 按钮图标化后文案永久为空，PDF 与 OCR 的清理从不执行）；
+     同时在清理链末尾调用 window.__ocrClearAll，一并清除纸质车票扫描图片、
+     识别结果与自动矫正队列。 */
   const clearBtn = document.getElementById("pdfClear");
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
       setTimeout(() => {
-        // 原处理器 confirm 通过后会把按钮文案置为「已清除」，据此判断用户是否确认
-        if (clearBtn.textContent !== "已清除") return;
+        if (!window.__clearConfirmed) return;
         const pv = document.getElementById("pdfPreview");
         const st = document.getElementById("pdfStatus");
         if (pv) { pv.textContent = ""; pv.style.display = "none"; }
@@ -5958,8 +6066,14 @@ window.batchSaveAll = function(){
           hint.appendChild(strong);
         }
         if (window.__pdfPickerReset) window.__pdfPickerReset();
+        if (window.__ocrClearAll) window.__ocrClearAll();   // V6.2.1：清除 OCR 扫描图片与识别数据
         clearBtn.classList.add("done");
+        window.__clearConfirmed = false;                    // 一次性旗标，复位供下次使用
         setTimeout(() => clearBtn.classList.remove("done"), 1500);
+        /* V6.2.1：清除表单后 saveInfo 会把当前（空）状态经 300ms 防抖重新写回 URL 参数，
+           使「清空 URL 分享参数」落空；先取消待执行的防抖定时器，再清 URL 保证最终态 */
+        try { if (typeof saveInfo === "function" && saveInfo._t) { clearTimeout(saveInfo._t); saveInfo._t = null; } } catch (e) {}
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
       }, 0);
     });
   }
@@ -7721,25 +7835,11 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 }
 /* ==========================================================================
    V6.1 · OCR 悬浮窗（桌面端独立窗体 / 移动端内联回退）
-   - .ocr-entry：卡片内紧凑入口行（仅桌面端显示）
+   - V6.2.1：卡片内已改为 PDF 风格拖放区+按钮列（.pdf-zone/.pdf-btns，见 .card-ocr 规则），
+     .ocr-entry 紧凑入口行随之移除
    - .ocr-win：窗体外壳挂页面顶层（body 直属），桌面端 fixed + 可拖拽；
      移动端(≤720px)由 JS 搬回 #cardOcr 内转内联面板
    ========================================================================== */
-.ocr-entry {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-.ocr-entry .btn-run {
-  height: 38px;
-  min-height: 38px;
-  padding: 0 18px;
-  font-size: 13px;
-}
-.ocr-entry-hint { font-size: 12px; color: var(--text-dim); }
-.ocr-entry-hint b { color: var(--accent-text); font-weight: 650; }
 .ocr-win {
   position: fixed;
   z-index: 2600;
@@ -7816,7 +7916,6 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 .ocr-win .ocr-zone { min-height: 110px; }
 .ocr-win .ocr-list { max-height: none; flex: none; }
 @media (max-width: 720px){
-  .ocr-entry { display: none; }
   .ocr-win {
     position: static;
     width: auto;
@@ -7830,6 +7929,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     border: 1px dashed var(--border-strong);
     box-shadow: none;
   }
+  /* V6.2.1：卡片按钮列在窄屏保持竖排但收窄，拖放区自适应 */
+  .card-ocr .pdf-btns { width: 74px; }
   .ocr-win-head { cursor: default; padding: 8px 10px; }
   .ocr-win-close { display: none; }
   .ocr-win-body { padding: 10px; overflow: visible; }
@@ -7865,10 +7966,19 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     <!-- V6.2：联网引擎（OCR.space）API Key 配置行——仅在引擎下拉选择「联网引擎」时显示；
          免费额度有限，建议注册自己的免费 Key（不填则用公共体验 Key，限 10 次/10 分钟） -->
     <div class="ocr-cloud-row" id="ocrCloudRow" hidden>
-      <label for="ocrCloudKey">联网 Key</label>
+      <label for="ocrCloudKey">OCR.space</label>
       <input type="text" id="ocrCloudKey" placeholder="OCR.space API Key（不填用公共体验 Key）" autocomplete="off" spellcheck="false">
       <button class="btn btn-mini" id="ocrCloudSave" type="button" title="保存 Key 到本机浏览器（不上传）">保存</button>
       <a class="ocr-cloud-link" href="https://ocr.space/ocrapi/freekey" target="_blank" rel="noopener noreferrer">免费领取</a>
+    </div>
+    <!-- V6.2.1：百度 OCR Key 配置行（百度智能云文字识别标准版，免费 500 次/日；
+         在百度智能云控制台创建应用获取 API Key / Secret Key，仅本机存储） -->
+    <div class="ocr-cloud-row" id="ocrBaiduRow" hidden>
+      <label for="ocrBaiduKey">百度</label>
+      <input type="text" id="ocrBaiduKey" placeholder="API Key" autocomplete="off" spellcheck="false">
+      <input type="text" id="ocrBaiduSecret" placeholder="Secret Key" autocomplete="off" spellcheck="false">
+      <button class="btn btn-mini" id="ocrBaiduSave" type="button" title="保存到本机浏览器（不上传）">保存</button>
+      <a class="ocr-cloud-link" href="https://console.bce.baidu.com/ai/?_=1758774408291#/ai/ocr/app/list" target="_blank" rel="noopener noreferrer">免费领取</a>
     </div>
     <div class="ocr-list" id="ocrList" hidden></div>
     <div class="ocr-actions-bar" id="ocrActions" hidden>
@@ -7887,6 +7997,15 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.1</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>修复</b> <b>车厢号 / 座位号 / 检票口识别为空</b>：小字漏检时新增三级兜底——①文本层增加「车厢:5 / 座位:10F / 10F号 / 014号」标签式与独立式正则；②PP 引擎检出框<b>位置感知补全</b>（「车厢」「座位」「检票」标签框 → 同行右侧 / 正下方框按空间配对取值，仅补缺失不覆盖）；③仍缺失时对票面中上部 / 右下区域<b>裁剪放大补盲重识别</b>（仅本地引擎，不额外联网）。实测主字段全部命中。</li>
+        <li><b>修复</b> 「一键清除」不清除导入数据：根因是第二处理器以按钮文案「已清除」判断用户是否确认，而 V6.0 起按钮已图标化（文案恒为空），导致 <b>PDF 文件与 OCR 扫描图片的清理逻辑从未执行</b>。现改为确认旗标（__clearConfirmed）门控，并在清除链中统一调用 OCR 清理，一次点击清空全部表单、URL 参数、PDF 文件、扫描图片与识别结果。</li>
+        <li><b>优化</b> 纸质扫描照片<b>添加后立即自动矫正</b>：不再等到识别时才矫正——照片入队后立即解码、透视矫正并按标准票幅（1600×1009）裁剪，替换原文件后列表缩略图同步换为矫正图并挂「已矫正」角标；多张照片串行队列处理，识别时直接使用矫正后票面。</li>
+        <li><b>优化</b> 「纸质车票扫描识别」界面参照 <b>PDF 导入样式</b>重排：虚线拖放区 + 按钮列（添加 / 开始识别 / <b>清除已导入图片</b>）+ 独立状态条，不再藏在悬浮窗后面；开始识别时自动弹出识别窗口（进度、列表、字段核对、生成行程），卡片与窗口状态实时同步。</li>
+        <li><b>修复</b> <b>联网引擎切不回本地引擎</b>：根因是切换后引擎芯片不即时刷新（仍显示「OCR.space·云」）造成误判。现切换引擎即刷新芯片与「开始识别」禁用态；每次选择联网引擎都需重新确认上传提示。</li>
+        <li><b>新增</b> 第二个联网引擎<b>百度 OCR</b>（百度智能云文字识别标准版，免费 500 次/日）：引擎下拉新增「联网引擎（百度）」，需在识别窗口内填写百度智能云应用的 API Key / Secret Key（仅存本机），访问凭证自动缓存 30 天、过期自动重取；同样仅在明确选择并确认后才上传照片，云端失败自动回退本地引擎。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2</b><span>2026-09-26</span></div>
       <ul>
         <li><b>新增</b> 拍摄角度<b>自动矫正</b>：上传歪斜/透视拍摄的火车票照片时，自动检测票面四角（Otsu 二值化 + 最大连通域 + 极值角点），单应变换拉正并按<b>标准火车票票幅比例（85.6:54）</b>裁剪成 1600px 宽标准票面后再识别；识别成功的条目缩略图同步显示<b>矫正后的票面</b>（挂「已矫正」角标），不再显示原始歪斜照片，识别置信度显著提升。</li>
@@ -8662,42 +8781,64 @@ var ENGINE_MSGS = {
     paddleV6: "已切换为超精度引擎（PP-OCRv6）：中文识别最准，首次使用需联网下载约 30MB 模型，之后可离线",
     paddle: "已切换为高精度引擎（PP-OCRv5）：首次使用需联网下载约 16MB 模型，之后可离线",
     tesseract: "已切换为轻量引擎（Tesseract）：模型约 25MB，速度与精度均衡",
-    cloud: "已切换为联网引擎（OCR.space）：识别时照片将上传云端，免费额度有限，可在下方填写自己的 API Key"
+    cloud: "已切换为联网引擎（OCR.space）：识别时照片将上传云端，免费额度有限，可在下方填写自己的 API Key",
+    cloudBaidu: "已切换为联网引擎（百度 OCR）：识别时照片将上传百度智能云，需填写自建应用的 API Key / Secret Key（标准版免费 500 次/日）"
 };
+/* V6.2.1：引擎芯片即时刷新——不依赖引擎加载，切换即所见
+   （旧版只在 getEngine 成功后才刷新，用户切回本地引擎后芯片仍显示「云」，
+   造成「无法切回本地引擎」的误判） */
+function refreshEngineChip(){
+    if(!engineChip) return;
+    var pref = getOcrEnginePref(), txt = "";
+    if(pref === "cloud") txt = "OCR.space·云";
+    else if(pref === "cloudBaidu") txt = "百度OCR·云";
+    else if(pref === "tesseract") txt = "Tesseract·轻量";
+    else if(PADDLE_VARIANTS[pref]) txt = PADDLE_VARIANTS[pref].chip;
+    engineChip.hidden = !txt;
+    engineChip.textContent = txt;
+    engineChip.classList.add("ok");
+}
 if(engineSel){
     var savedPref = getOcrEnginePref();
     engineSel.value = savedPref;
     if(savedPref !== "cloud") lastLocalPref = savedPref;
     engineSel.addEventListener("change", function(){
         var v = engineSel.value;
-        if(v === "cloud" && !cloudConfirmed){
+        if(v === "cloud" || v === "cloudBaidu"){
+            /* V6.2.1：每次选择联网引擎都重新确认（照片要上传，不能让旧确认长期生效） */
+            var engName = v === "cloud" ? "OCR.space" : "百度智能云（百度 OCR）";
             var ok = false;
-            try{ ok = window.confirm("启用联网引擎（OCR.space）？\n\n票据照片将上传至云端服务器识别（免费额度有限）。\n除该引擎外，本应用所有功能均不上传任何数据。\n\n确认启用吗？"); }catch(e){ ok = false; }
+            try{ ok = window.confirm("启用联网引擎（" + engName + "）？票据照片将上传至云端服务器识别；除该引擎外，本应用所有功能均不上传任何数据。确定启用吗？（取消则保持本地引擎）"); }catch(e){ ok = false; }
             if(!ok){
                 engineSel.value = lastLocalPref;
                 try{ localStorage.setItem("__ocrEngine", lastLocalPref); }catch(e){}
                 showStatus("", "已取消联网引擎，保持本地引擎（未上传任何数据）");
                 syncCloudRow();
+                refreshEngineChip();
                 return;
             }
             cloudConfirmed = true;
-        }else if(v !== "cloud"){
+        }else if(v !== "cloud" && v !== "cloudBaidu"){
             lastLocalPref = v;
         }
         try{ localStorage.setItem("__ocrEngine", v); }catch(e){}
         showStatus("", ENGINE_MSGS[v] || "");
         syncCloudRow();
+        refreshEngineChip();
     });
 }
 function syncCloudRow(){
-    var row = document.getElementById("ocrCloudRow");
-    if(!row) return;
-    row.hidden = getOcrEnginePref() !== "cloud";
+    var pref = getOcrEnginePref();
+    var row1 = document.getElementById("ocrCloudRow"), row2 = document.getElementById("ocrBaiduRow");
+    if(row1) row1.hidden = pref !== "cloud";
+    if(row2) row2.hidden = pref !== "cloudBaidu";
 }
 function getCloudKey(){
     try{ return (localStorage.getItem("__ocrCloudKey") || "").trim() || "helloworld"; }
     catch(e){ return "helloworld"; }
 }
+function getBaiduKey(){ try{ return (localStorage.getItem("__ocrBaiduKey") || "").trim(); }catch(e){ return ""; } }
+function getBaiduSecret(){ try{ return (localStorage.getItem("__ocrBaiduSecret") || "").trim(); }catch(e){ return ""; } }
 /* 联网 Key 保存（仅本机 localStorage，不上传）；恢复已存 Key 并按引擎偏好显隐该行 */
 (function(){
     var inp = document.getElementById("ocrCloudKey"), btn = document.getElementById("ocrCloudSave");
@@ -8705,15 +8846,36 @@ function getCloudKey(){
     if(inp && saved && saved !== "helloworld") inp.value = saved;
     if(btn) btn.addEventListener("click", function(){
         try{ localStorage.setItem("__ocrCloudKey", (inp && inp.value || "").trim()); }catch(e){}
-        showStatus("ok", "联网 Key 已保存到本机浏览器（仅本地存储）");
+        showStatus("ok", "OCR.space Key 已保存到本机浏览器（仅本地存储）");
+    });
+    /* V6.2.1：百度 OCR Key / Secret Key 保存与恢复 */
+    var ki = document.getElementById("ocrBaiduKey"), si = document.getElementById("ocrBaiduSecret"), btn2 = document.getElementById("ocrBaiduSave");
+    var ks = getBaiduKey(), ss = getBaiduSecret();
+    if(ki && ks) ki.value = ks;
+    if(si && ss) si.value = ss;
+    if(btn2) btn2.addEventListener("click", function(){
+        try{
+            localStorage.setItem("__ocrBaiduKey", (ki && ki.value || "").trim());
+            localStorage.setItem("__ocrBaiduSecret", (si && si.value || "").trim());
+            showStatus("ok", "百度 Key 已保存到本机浏览器（仅本地存储）");
+        }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
     });
 })();
 syncCloudRow();
+refreshEngineChip();
 
+/* V6.2.1：状态条双写——悬浮窗内 #ocrStatus 与卡片 #ocrCardStatus 保持同步；
+   卡片按钮（添加/开始识别/清除已导入图片）同步禁用态 */
+var cardStatusEl = $("ocrCardStatus"), cardRunBtn = $("ocrCardRun"), cardZone = $("ocrCardZone");
 function showStatus(cls, msg){
     statusEl.className = "pdf-status" + (cls ? " " + cls : "");
     statusEl.style.display = msg ? "block" : "none";
     statusEl.textContent = msg || "";
+    if(cardStatusEl){
+        cardStatusEl.className = statusEl.className;
+        cardStatusEl.style.display = statusEl.style.display;
+        cardStatusEl.textContent = statusEl.textContent;
+    }
 }
 /* V6.2：进度顶条驱动——pct 为空时进入滑动光块（不定进度，如引擎/模型加载），否则显示百分比 */
 function setOcrBar(pct){
@@ -8828,7 +8990,7 @@ var paddleCache = {};                            // vk → { inst, loading }（�
 function getOcrEnginePref(){
     try{
         var v = localStorage.getItem("__ocrEngine");
-        return (v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud") ? v : "paddleV6";
+        return (v === "paddleV6" || v === "paddle" || v === "tesseract" || v === "cloud" || v === "cloudBaidu") ? v : "paddleV6";
     }catch(e){ return "paddleV6"; }
 }
 function dynImport(u){
@@ -9002,7 +9164,9 @@ function paddleEngine(inst, name){
                 for(const m of its) s += (m.score || 0);
                 conf = Math.round(s / its.length * 100);
             }
-            return { data: { text: text, confidence: conf } };
+            /* V6.2.1：透传检出框（text+poly 坐标）——车厢/座位小字漏检时由
+               patchParsedByPosition 按标签-值空间配对补全 */
+            return { data: { text: text, confidence: conf, items: its } };
         }
     };
 }
@@ -9074,19 +9238,95 @@ async function cloudEngine(onPhase){
         }
     };
 }
+/* ---------------- V6.2.1 联网引擎（百度 OCR，备选二） ----------------
+   百度智能云「文字识别」标准版（general_basic）：免费 500 次/日。
+   OAuth token（client_credentials）有效期约 30 天，缓存于 localStorage，过期自动重取；
+   需用户在百度智能云控制台创建应用获取 API Key / Secret Key。
+   与 OCR.space 相同：仅在用户明确选择并确认后才上传照片。 */
+async function baiduGetToken(){
+    const k = getBaiduKey(), s = getBaiduSecret();
+    try{
+        const raw = localStorage.getItem("__ocrBaiduToken");
+        if(raw){
+            const o = JSON.parse(raw);
+            if(o && o.token && o.exp > Date.now() + 120000) return o.token;
+        }
+    }catch(e){}
+    const r = await fetch("https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=" + encodeURIComponent(k) + "&client_secret=" + encodeURIComponent(s), { method: "POST" });
+    if(!r.ok) throw new Error("百度 Key 校验失败（HTTP " + r.status + "）");
+    const j = await r.json();
+    if(!j.access_token) throw new Error(j.error_description || j.error || "百度 Key 无效");
+    try{
+        localStorage.setItem("__ocrBaiduToken", JSON.stringify({
+            token: j.access_token, exp: Date.now() + (j.expires_in || 2592000) * 1000
+        }));
+    }catch(e){}
+    return j.access_token;
+}
+async function baiduEngine(onPhase){
+    const k = getBaiduKey(), s = getBaiduSecret();
+    if(!k || !s){
+        showStatus("err", "使用百度引擎需先在识别窗口内填写 API Key 与 Secret Key（百度智能云控制台免费创建，标准版 500 次/日）");
+        return null;
+    }
+    if(!cloudConfirmed){
+        var ok = false;
+        try{ ok = window.confirm("即将使用联网引擎（百度 OCR）：票据照片将上传至百度智能云识别；除该引擎外，本应用所有功能均不上传任何数据。确定继续吗？（取消则改用本地引擎）"); }catch(e){ ok = false; }
+        if(!ok){
+            showStatus("", "已取消联网识别（未上传任何数据），自动改用本地引擎");
+            return null;
+        }
+        cloudConfirmed = true;
+    }
+    if(onPhase) onPhase("联网识别中（获取百度访问凭证…）");
+    const token = await baiduGetToken();      // Key 无效等错误上抛，由 getEngine 捕获并回退本地引擎
+    if(onPhase) onPhase("联网识别中（上传压缩图至百度 OCR…）");
+    return {
+        name: "百度OCR",
+        pre: function(cv){ return cv; },
+        recognize: async function(cv){
+            const dataUrl = shrinkForCloud(cv);
+            const b64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+            /* 30s 超时：网络被墙/服务无响应时中止请求并报错，不无限悬挂 */
+            const ctrl = ("AbortController" in window) ? new AbortController() : null;
+            const timer = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 30000) : null;
+            let res;
+            try{
+                res = await fetch("https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=" + encodeURIComponent(token), {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "image=" + encodeURIComponent(b64),
+                    signal: ctrl ? ctrl.signal : undefined
+                });
+            }catch(err){
+                if(timer) clearTimeout(timer);
+                throw new Error(/abort/i.test(String((err && err.name) || err)) ? "云端请求超时（30s），请检查网络后重试" : "云端请求失败：" + ((err && err.message) || err));
+            }
+            if(timer) clearTimeout(timer);
+            if(!res.ok) throw new Error("百度 OCR HTTP " + res.status);
+            const j = await res.json();
+            if(j.error_code && j.error_code !== 0) throw new Error("百度OCR " + j.error_code + "：" + (j.error_msg || "识别失败"));
+            const wr = j.words_result || [];
+            const words = wr.map(function(w){ return w.words; }).join(String.fromCharCode(10));
+            /* 云端不返回可靠置信度：按词数给保守估计 */
+            const conf = wr.length ? Math.min(95, Math.round(Math.min(1, wr.length / 25) * 95)) : 0;
+            return { data: { text: words, confidence: conf } };
+        }
+    };
+}
 async function getEngine(onPhase){
     var pref = getOcrEnginePref();
-    if(pref === "cloud"){
+    if(pref === "cloud" || pref === "cloudBaidu"){
         var eng = null;
-        try{ eng = await cloudEngine(onPhase); }
+        try{ eng = await (pref === "cloud" ? cloudEngine(onPhase) : baiduEngine(onPhase)); }
         catch(err){
             console.warn("[OCR] 联网引擎失败，回退本地引擎", err);
-            if(onPhase) onPhase("联网引擎不可用，改用本地引擎…");
+            if(onPhase) onPhase("联网引擎不可用（" + ((err && err.message) || err) + "），改用本地引擎…");
         }
         if(eng){
             if(engineChip){
                 engineChip.hidden = false;
-                engineChip.textContent = "OCR.space·云";
+                engineChip.textContent = pref === "cloud" ? "OCR.space·云" : "百度OCR·云";
                 engineChip.classList.add("ok");
             }
             return eng;
@@ -9494,20 +9734,28 @@ function deskewTicket(src){
 async function recognizeItem(it, worker, onPhase){
     const src = await fileToBitmap(it.file);
     let base = src;
-    it.rectified = false; it.cropped = false;
+    it.cropped = false;
+    /* V6.2.1：添加时已自动矫正的图（rectifyTried && rectified）本身就是 1600×1009
+       标准票幅白底，deskew 会判「已端正」返回 null——直接采信添加时的矫正结果，
+       不再重复矫正/裁剪，「已矫正」角标状态延续 */
+    const autoRect = !!(it.rectifyTried && it.rectified);
+    if(!autoRect) it.rectified = false;
     try{
         // ① V6.2 拍摄角度自动矫正：检测票面四角透视拉正并按标准票幅（85.6:54）裁剪，
         //    歪斜照片识别率大幅提升；矫正成功则列表缩略图同步为矫正后的票面
-        try{
-            const dk = deskewTicket(src);
-            if(dk && dk.cv){ base = dk.cv; it.rectified = true; }
-        }catch(e){ /* 矫正失败按原图识别 */ }
-        // ①' 未矫正时退回票面区域检测裁剪：把票面从深色背景中裁出，识别分辨率全部让给票面
-        if(!it.rectified){
+        //    V6.2.1：添加时已矫正的标准票幅跳过（图已是矫正结果）
+        if(!autoRect){
             try{
-                const r = detectCrop(src);
-                if(r){ base = cropBitmap(src, r); it.cropped = true; }
-            }catch(e){ /* 裁剪失败按原图识别 */ }
+                const dk = deskewTicket(src);
+                if(dk && dk.cv){ base = dk.cv; it.rectified = true; }
+            }catch(e){ /* 矫正失败按原图识别 */ }
+            // ①' 未矫正时退回票面区域检测裁剪：把票面从深色背景中裁出，识别分辨率全部让给票面
+            if(!it.rectified){
+                try{
+                    const r = detectCrop(src);
+                    if(r){ base = cropBitmap(src, r); it.cropped = true; }
+                }catch(e){ /* 裁剪失败按原图识别 */ }
+            }
         }
         // ② 方向探测：按矫正/裁剪后票面宽高比缩小候选方向（磁卡票横放约 1.59:1），
         //    竖矩形只在 90°/270° 中选，横矩形只在 0°/180° 中选，避免整图噪声导致误判
@@ -9531,13 +9779,20 @@ async function recognizeItem(it, worker, onPhase){
         it.conf = Math.round(res.data.confidence || 0);
         it.parsed = parseOcrText(it.text);
         it.status = "done";
+        /* V6.2.1：车厢/座位/检票口小字漏检三级兜底
+           —— 位置感知补全（检出框标签-值配对）与补盲重识别（区域裁剪放大，仅本地引擎） */
+        try{
+            const its = (res.data && res.data.items) || [];
+            if(its.length) patchParsedByPosition(it.parsed, its);
+            if(/PP|Tesseract/i.test(worker.name || "")) await blindFill(it, worker, full);
+        }catch(e){ /* 兜底失败不影响主识别结果 */ }
         // ③ V6.2：列表缩略图（红框预览区）同步为矫正/裁剪后的票面，不再显示原始歪斜照片
         try{
             const th = drawRotated(base, it.rotDeg || 0, 480);
             it.thumbUrl2 = th.toDataURL("image/jpeg", 0.82);
             const timg = it.el && it.el.querySelector(".ocr-thumb");
             if(timg) timg.src = it.thumbUrl2;
-            if(it.el && it.rectified) it.el.classList.add("rectified");
+            if(it.el && (it.rectified || autoRect)) it.el.classList.add("rectified");
         }catch(e){}
         return true;
     } finally {
@@ -9674,9 +9929,28 @@ function parseOcrText(text){
         }
     }
 
-    /* 车厢 / 座位：12车10F号 / 03车014号 */
+    /* 车厢 / 座位：12车10F号 / 03车014号
+       V6.2.1：小字漏检多层兜底——①合并式正则 ②「车厢/座位」标签式 ③座位「X号」独立式 */
     const mc = t.match(/(\d{1,2})\s*车\s*(\d{1,3}[A-Za-z]?)(?![\dA-Za-z])/);
     if(mc){ out.carriageNo = mc[1]; out.seatNo = mc[2]; }
+    if(!out.carriageNo){
+        /* 「车厢:5 / 车厢 5 / 5号车厢」——小字票面只识别出标签与数字时的常见形态 */
+        const mc2 = t.match(/车厢\s*[号:：]?\s*(\d{1,3})(?!\d)/) || t.match(/(\d{1,2})\s*号?\s*车厢/);
+        if(mc2) out.carriageNo = String(parseInt(mc2[1], 10));
+    }
+    if(!out.seatNo){
+        /* 「座位:10F / 座位 014 / 10F号」——独立式兜底（数字+字母号 与 补零数字号） */
+        const ms = t.match(/座位\s*[号:：]?\s*(\d{1,3}\s*[A-Fa-f]?)(?![\dA-Za-z])/);
+        if(ms) out.seatNo = ms[1].replace(/\s+/g, "");
+        if(!out.seatNo){
+            const ms2 = t.match(/(\d{1,3}\s*[A-Fa-f])\s*号/);
+            if(ms2) out.seatNo = ms2[1].replace(/\s+/g, "");
+            else{
+                const ms3 = t.match(/(?:^|[\s,，])(0\d{2}|[1-9]\d{0,2})\s*号(?![\dA-Za-z])/);
+                if(ms3 && out.carriageNo) out.seatNo = ms3[1];
+            }
+        }
+    }
 
     /* 席别 */
     for(const sc of SEAT_CLASSES){
@@ -9724,6 +9998,159 @@ function parseOcrText(text){
     out.infoline2 = t.indexOf("仅供报销使用") >= 0 ? 0 : 1;
     return out;
 }
+
+/* ==========================================================================
+   V6.2.1 · 车厢 / 座位 / 检票口 小字漏检三级兜底
+   ① patchParsedByPosition：PP 引擎检出框位置感知——标签框（「车厢」「座位」「检票」）
+     → 同行右侧 / 正下方框取文本，仅补缺失字段，不覆盖已识别值；
+   ② blindFill：仍缺失时对票面对应区域裁剪放大后单独识别（仅本地引擎，不额外联网）；
+   ③ patchParsedFromText：以上两者拿到补充文本后的统一补丁（与 parseOcrText 同规则）
+   ========================================================================== */
+function patchParsedFromText(parsed, txt){
+    if(!parsed) return parsed;
+    const t2 = String(txt || "").replace(/\s+/g, " ");
+    if(!t2) return parsed;
+    if(!parsed.carriageNo){
+        const m = t2.match(/(\d{1,2})\s*车\s*(\d{1,3}[A-Za-z]?)(?![\dA-Za-z])/);
+        if(m){ parsed.carriageNo = m[1]; if(!parsed.seatNo) parsed.seatNo = m[2]; }
+    }
+    if(!parsed.carriageNo){
+        const m = t2.match(/车厢\s*[号:：]?\s*(\d{1,3})(?!\d)/);
+        if(m) parsed.carriageNo = String(parseInt(m[1], 10));
+    }
+    if(!parsed.seatNo){
+        const m = t2.match(/座位\s*[号:：]?\s*(\d{1,3}\s*[A-Fa-f]?)(?![\dA-Za-z])/);
+        if(m) parsed.seatNo = m[1].replace(/\s+/g, "");
+        if(!parsed.seatNo){
+            const m2 = t2.match(/(\d{1,3}\s*[A-Fa-f])\s*号/);
+            if(m2) parsed.seatNo = m2[1].replace(/\s+/g, "");
+        }
+    }
+    if(!parsed.checkinRoom){
+        const m = t2.match(/检票\s*[:：]?\s*([0-9A-Za-z\/\-]{1,12})(?![0-9A-Za-z])/);
+        if(m) parsed.checkinRoom = "检票: " + m[1];
+        if(!parsed.checkinRoom){
+            const m2 = t2.match(/检票口\s*([A-Za-z]?\d{1,2}[A-Za-z]?\d{0,2}[A-Za-z]?)(?![0-9A-Za-z])(?!车)/);
+            if(m2) parsed.checkinRoom = m2[1] + "检票口";
+        }
+    }
+    return parsed;
+}
+function patchParsedByPosition(parsed, its){
+    if(!parsed || !Array.isArray(its) || !its.length) return parsed;
+    const boxes = [];
+    for(const m of its){
+        if(!m || !m.text) continue;
+        const poly = m.poly || [], xs = [], ys = [];
+        for(const p of poly){
+            if(!p) continue;
+            const x = (p.x != null) ? p.x : p[0], y = (p.y != null) ? p.y : p[1];
+            if(typeof x === "number" && typeof y === "number"){ xs.push(x); ys.push(y); }
+        }
+        if(!xs.length) continue;
+        boxes.push({ text: String(m.text).trim(), x0: Math.min.apply(null, xs), x1: Math.max.apply(null, xs),
+            y0: Math.min.apply(null, ys), y1: Math.max.apply(null, ys) });
+    }
+    if(!boxes.length) return parsed;
+    const sameLine = function(a, b){
+        const cy1 = (a.y0 + a.y1) / 2, cy2 = (b.y0 + b.y1) / 2;
+        return Math.abs(cy1 - cy2) <= Math.max(a.y1 - a.y0, b.y1 - b.y0, 8) * 0.6;
+    };
+    const justBelow = function(a, b){
+        return (b.y0 - a.y1) > -4 && (b.y0 - a.y1) < Math.max(48, (a.y1 - a.y0) * 2.4) &&
+            a.x0 < b.x1 && b.x0 < a.x1;
+    };
+    /* 按「标签框自身 → 同行右侧最近 → 正下方最近」顺序取候选文本，交给 parseFn 解析；
+       标签正则必须严格（「车次」「限乘当日当次车」等不得误入），parseFn 严格到
+       「值必须几乎整个框都是数字/座位号」防「G1234→234」误取 */
+    function labeledTexts(labelRe, parseFn){
+        for(const lb of boxes){
+            if(!labelRe.test(lb.text)) continue;
+            const cands = [];
+            for(const c of boxes){
+                if(c !== lb && sameLine(lb, c) && c.x0 >= lb.x1 - 6) cands.push({ t: c.text, d: c.x0 - lb.x1, below: false });
+            }
+            for(const c of boxes){
+                if(c !== lb && justBelow(lb, c)) cands.push({ t: c.text, d: Math.abs(c.x0 - lb.x0), below: true });
+            }
+            cands.sort(function(a, b){ return (a.below === b.below) ? (a.d - b.d) : (a.below ? 1 : -1); });
+            const seq = [lb.text].concat(cands.map(function(c){ return c.t; }));
+            for(const s of seq){
+                const v = parseFn(String(s).trim());
+                if(v) return v;
+            }
+        }
+        return null;
+    }
+    if(!parsed.carriageNo){
+        const v = labeledTexts(/^(?:\d{1,3}\s*)?车$|^车厢\b|车厢\s*[:：]?$/, function(s){
+            /* 标签自身可能含值：「12车05F」「车厢5」；同行右侧值框应为纯数字 */
+            let m = s.match(/^(?:\d{1,3}\s*)车\s*(\d{1,3})(?![\dA-Za-z])$/) || s.match(/^车厢\s*[:：]?\s*(\d{1,3})$/);
+            if(m) return String(parseInt(m[1], 10));
+            m = s.match(/^(\d{1,3})\s*号?$/);           // 纯值框（右侧/下方）
+            return m ? String(parseInt(m[1], 10)) : null;
+        });
+        if(v) parsed.carriageNo = v;
+    }
+    if(!parsed.seatNo){
+        const v = labeledTexts(/^座位?$|^坐位?$|^座$|座位\s*[:：]?$/, function(s){
+            let m = s.match(/^(?:\d{1,3}\s*)座位\s*[:：]?\s*(\d{1,3}\s*[A-Fa-f]?)$/) || s.match(/^座位\s*[:：]?\s*(\d{1,3}\s*[A-Fa-f]?)$/);
+            if(m) return m[1].replace(/\s+/g, "");
+            m = s.match(/^(\d{1,3}\s*[A-Fa-f]?)\s*号?$/);   // 纯值框：05F / 014 / 05F号
+            if(m && /\d/.test(m[1])) return m[1].replace(/\s+/g, "");
+            return null;
+        });
+        if(v) parsed.seatNo = v;
+    }
+    if(!parsed.checkinRoom){
+        const v = labeledTexts(/^检票$|检票口?\s*[:：]?$/, function(s){
+            const m = s.match(/^([0-9A-Za-z\/\-]{1,12})$/);
+            if(m && /\d/.test(m[1])) return "检票: " + m[1];
+            const m2 = s.match(/^检票\s*[:：]?\s*([0-9A-Za-z\/\-]{1,12})$/);
+            if(m2 && /\d/.test(m2[1])) return "检票: " + m2[1];
+            const m3 = s.match(/^检票口\s*([0-9A-Za-z\/\-]{1,12})$/);
+            if(m3 && /\d/.test(m3[1])) return m3[1] + "检票口";
+            return null;
+        });
+        if(v) parsed.checkinRoom = v;
+    }
+    return parsed;
+}
+/* 补盲重识别：整票面识别后车厢/座位/检票口仍缺失时，对票面对应区域裁剪放大单独识别。
+   仅本地引擎调用（blindFill 的调用方已按 worker.name 过滤，联网引擎不额外请求）。 */
+async function blindFill(it, worker, full){
+    if(!it || !it.parsed || !worker || typeof worker.recognize !== "function" || !full) return;
+    const needSeat = !it.parsed.carriageNo || !it.parsed.seatNo;
+    const needCheck = !it.parsed.checkinRoom;
+    if(!needSeat && !needCheck) return;
+    const W = full.width, H = full.height;
+    if(!W || !H) return;
+    const bands = [];
+    /* 车厢/座位位于票面中上部（车次/站名区下方），检票口位于右下（票价下方） */
+    if(needSeat) bands.push([0.28, 0.60]);
+    if(needCheck) bands.push([0.60, 0.92]);
+    for(const b of bands){
+        try{
+            const y0 = Math.max(0, Math.round(H * b[0]));
+            const hh = Math.max(24, Math.round(H * (b[1] - b[0])));
+            const c2 = document.createElement("canvas");
+            c2.width = W; c2.height = hh;
+            const cx = c2.getContext("2d", { willReadFrequently: true });
+            cx.drawImage(full, 0, y0, W, hh, 0, 0, W, hh);
+            const r = await worker.recognize(worker.pre(c2));
+            const txt = (r && r.data && r.data.text) || "";
+            const its = (r && r.data && r.data.items) || [];
+            patchParsedFromText(it.parsed, txt);
+            if(its.length) patchParsedByPosition(it.parsed, its);
+            if(it.parsed.carriageNo && it.parsed.seatNo && it.parsed.checkinRoom) break;
+        }catch(e){ /* 补盲失败静默：已有识别结果仍然有效 */ }
+    }
+}
+
+/* 调试钩子（V6.2.1 新增；parseOcrText 已有 window.__ocrParse 同源暴露） */
+window.__patchParsedFromText = patchParsedFromText;
+window.__patchParsedByPosition = patchParsedByPosition;
+window.__ocrBaiduProbe = baiduEngine;
 
 /* ---------------- 表单填充 / 行程生成（与 PDF 管线同一写入规则） ---------------- */
 function fillFormFromParsed(p){
@@ -9964,6 +10391,7 @@ function updateChipAll(){ items.forEach(updateChip); }
 function syncButtons(){
     const hasPending = items.some(it => it.status === "pending" || it.status === "error");
     runBtn.disabled = running || !hasPending;
+    if(cardRunBtn) cardRunBtn.disabled = runBtn.disabled;   // V6.2.1：卡片「开始识别」同步禁用态
     listEl.hidden = !items.length;
     actionsEl.hidden = !items.length;
 }
@@ -9975,13 +10403,93 @@ function removeItem(it){
     renderList();
     syncButtons();
 }
+/* ---------------- V6.2.1 照片添加后立即自动矫正 + 标准票幅裁剪 ----------------
+   解码原图 → deskewTicket 透视矫正 → 1600×1009 标准票幅 canvas → 转 JPEG File 替换
+   it.file（识别与补盲均直接用矫正后票面）；缩略图同步换矫正图并挂「已矫正」角标。
+   多张入队串行处理（矫正为 CPU 密集，并发会互相拖慢）；失败保留原图，
+   recognizeItem 识别时仍会再尝试（因此用 it.rectifyTried 与 it.rectified 两个标记区分）。 */
+var rectifyQueue = [], rectifyBusy = false, rectifyTotal = 0, rectifyDone = 0, rectifyOk = 0;
+function enqueueRectify(list){
+    rectifyTotal += list.length;
+    rectList = list;
+    list.forEach(function(it){ rectifyQueue.push(it); });
+    pumpRectify();
+}
+var rectList = [];
+function pumpRectify(){
+    if(rectifyBusy) return;
+    const it = rectifyQueue.shift();
+    if(!it) return;
+    rectifyBusy = true;
+    rectifyOne(it).then(function(r){
+        rectifyDone++;
+        if(r && r.ok) rectifyOk++;
+        if(rectifyQueue.length){
+            showStatus("", "自动矫正中 " + rectifyDone + "/" + rectifyTotal + "（矫正为标准火车票幅后再识别，小字更清楚）");
+        }else if(rectifyOk > 0){
+            showStatus(rectifyOk >= rectifyDone ? "ok" : "", "已添加 " + rectifyDone + " 张照片，自动矫正 " + rectifyOk + " 张为标准票幅，点击「开始识别」");
+        }
+    }, function(){}).then(function(){
+        rectifyBusy = false;
+        pumpRectify();
+    });
+}
+async function rectifyOne(it){
+    if(!it || it.rectifyTried) return null;
+    it.rectifyTried = true;
+    try{
+        const src = await fileToBitmap(it.file);
+        let dk = null;
+        try{ dk = deskewTicket(src); }catch(e){ dk = null; }
+        if(src && src.close){ try{ src.close(); }catch(e){} }
+        if(!dk || !dk.cv) return { it: it, ok: false };
+        const cv = dk.cv;
+        await new Promise(function(resolve){
+            try{
+                cv.toBlob(function(blob){
+                    try{
+                        if(blob){
+                            it.file = new File([blob],
+                                String(it.name || "ticket").replace(/\.[A-Za-z0-9]+$/, "") + "_矫正.jpg",
+                                { type: "image/jpeg" });
+                            it.rectified = true;
+                            const w = cv.width, h = cv.height;
+                            const sc = Math.min(1, 480 / Math.max(w, h));
+                            const th = document.createElement("canvas");
+                            th.width = Math.max(1, Math.round(w * sc));
+                            th.height = Math.max(1, Math.round(h * sc));
+                            th.getContext("2d").drawImage(cv, 0, 0, th.width, th.height);
+                            it.thumbUrl2 = th.toDataURL("image/jpeg", 0.82);
+                            const timg = it.el && it.el.querySelector(".ocr-thumb");
+                            if(timg){
+                                timg.src = it.thumbUrl2;
+                                if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} it.thumbUrl = ""; }
+                            }
+                            if(it.el) it.el.classList.add("rectified");
+                            updateChip(it);
+                        }
+                    }catch(e){}
+                    resolve();
+                }, "image/jpeg", 0.92);
+            }catch(e){ resolve(); }
+        });
+        return { it: it, ok: !!it.rectified };
+    }catch(e){
+        return { it: it, ok: false };
+    }
+}
+window.__ocrRectifyAll = function(){
+    return items.map(function(it){ return { name: it.name, rectifyTried: it.rectifyTried, rectified: it.rectified }; });
+};
 function addFiles(fl){
     const arr = Array.prototype.slice.call(fl || []).filter(f => f && (/^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp)$/i.test(f.name)));
     if(!arr.length){ showStatus("err", "请选择图片文件（JPG / PNG / WebP 等）"); return; }
-    arr.forEach(f => items.push({ file: f, name: f.name, status: "pending", confirmed: false }));
+    const added = [];
+    arr.forEach(f => { const it = { file: f, name: f.name, status: "pending", confirmed: false }; items.push(it); added.push(it); });
     renderList();
     syncButtons();
-    showStatus("", "已添加 " + arr.length + " 张照片，共 " + items.length + " 张待识别，点击「开始识别」");
+    showStatus("", "已添加 " + arr.length + " 张照片，共 " + items.length + " 张待识别，正在自动矫正与裁剪，可点击「开始识别」");
+    enqueueRectify(added);        // V6.2.1：添加后立即自动矫正，不再等到识别时
 }
 
 /* ---------------- 识别调度 ---------------- */
@@ -9996,6 +10504,8 @@ async function runAll(){
     if(running) return;
     if(!items.length){ showStatus("err", "请先添加纸质火车票照片"); return; }
     if(!wasmGuard()) return;
+    /* V6.2.1：桌面端自动弹出识别窗口（进度条/照片列表/字段核对均在窗内） */
+    if(window.__ocrOpenWin) window.__ocrOpenWin();
     const todo = items.filter(it => it.status === "pending" || it.status === "error");
     if(!todo.length){ showStatus("ok", "全部照片均已识别：核对字段后「生成行程 / 导出CSV」，或对单张「重新识别」"); return; }
     running = true;
@@ -10110,6 +10620,23 @@ zone.addEventListener("drop", function(e){
     zone.classList.remove("dragover");
     if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
 });
+/* V6.2.1：卡片拖放区与按钮（参照 PDF 导入卡片布局）——与悬浮窗共用同一 items 队列 */
+if(cardZone){
+    cardZone.addEventListener("click", function(){ fileInput.click(); });
+    cardZone.addEventListener("keydown", function(e){
+        if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
+    });
+    cardZone.addEventListener("dragover", function(e){ e.preventDefault(); cardZone.classList.add("dragover"); });
+    cardZone.addEventListener("dragleave", function(){ cardZone.classList.remove("dragover"); });
+    cardZone.addEventListener("drop", function(e){
+        e.preventDefault();
+        cardZone.classList.remove("dragover");
+        if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+    });
+}
+if($("ocrCardAdd")) $("ocrCardAdd").addEventListener("click", function(){ fileInput.click(); });
+if(cardRunBtn) cardRunBtn.addEventListener("click", runAll);
+if($("ocrCardClear")) $("ocrCardClear").addEventListener("click", clearAllItems);
 fileInput.addEventListener("change", function(){
     addFiles(fileInput.files);
     fileInput.value = "";                      // 允许再次选择同一文件
@@ -10118,14 +10645,22 @@ addBtn.addEventListener("click", function(){ fileInput.click(); });
 runBtn.addEventListener("click", runAll);
 $("ocrApplyAll").addEventListener("click", applyAll);
 $("ocrExport").addEventListener("click", exportCsv);
-$("ocrClear").addEventListener("click", function(){
-    if(!items.length) return;
-    if(!window.confirm("确定清空全部照片与识别结果？（已生成的行程不受影响）")) return;
+/* V6.2.1：清除已导入图片（卡片按钮 / 窗内清空 / 一键清除共用同一入口） */
+function clearAllItems(){
+    if(!items.length) return false;
     items.forEach(function(it){ if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} } });
     items.length = 0;                          // 保持数组引用（__ocrItems 钩子）不变
+    rectifyQueue.length = 0;                   // 丢弃尚在排队中的自动矫正任务
     renderList();
     syncButtons();
     showStatus("", "");
+    return true;
+}
+window.__ocrClearAll = clearAllItems;         // 供主界面「一键清除」调用
+$("ocrClear").addEventListener("click", function(){
+    if(!items.length) return;
+    if(!window.confirm("确定清空全部照片与识别结果？（已生成的行程不受影响）")) return;
+    clearAllItems();
 });
 
 /* ---------------- 调试钩子 ---------------- */
@@ -10292,6 +10827,12 @@ if(typeof window.__ocrAddFiles === "function"){
         return r;
     };
 }
+/* V6.2.1：暴露开窗能力——卡片「开始识别」时自动弹出识别窗口
+   （照片列表/字段核对/生成行程均在窗内进行，卡片只负责添加与状态展示） */
+window.__ocrOpenWin = function(){
+    openWin();
+    syncBadge();
+};
 
 place();
 })();
