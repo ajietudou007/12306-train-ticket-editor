@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.3</title>
+<title>12306火车票票根编辑器V6.2.4</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -1284,8 +1284,10 @@ body::after {
   align-items: stretch;
 }
 .card-ocr .pdf-btns {
-  flex: 1 1 0;
-  width: 88px;
+  /* V6.2.4：按钮列由固定 88px 改为随内容自适应（flex-basis auto）——
+     「清除已导入图片」文字不再被裁切溢出 */
+  flex: 0 0 auto;
+  width: auto;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -1366,7 +1368,19 @@ body::after {
   box-shadow: 0 10px 26px var(--accent-glow);
 }
 .card-ocr .pdf-zone:active { transform: scale(0.985); }
-.card-ocr .pdf-status { margin-top: 8px; }
+/* V6.2.4：状态提示移入虚线框内——底部覆盖层（absolute 不占流、布局零缩放），
+   平时提示文字完整展示，有消息时覆盖在框内底部，视觉与 PDF 进度覆盖层同语言 */
+.ocr-zone-card .pdf-status {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  width: auto;
+  margin: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: var(--surface, #1A232E);
+  border: 1px solid var(--border, #28343F);
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+}
 .pdf-zone .pdf-icon {
   font-size: 20px;
   line-height: 1;
@@ -2162,6 +2176,10 @@ body.ep-lock{overflow:hidden;}
     <path d="M19.5 6v4.6a2.4 2.4 0 0 1-2.4 2.4H5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
     <path d="M8.5 9.5 5 13l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24">
+    <path d="M2.8 12S6.2 5.8 12 5.8 21.2 12 21.2 12 17.8 18.2 12 18.2 2.8 12 2.8 12Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="2.9" fill="none" stroke="currentColor" stroke-width="1.7"/>
+  </symbol>
   <symbol id="i-save" viewBox="0 0 24 24">
     <rect x="5" y="4" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
     <path d="M9 4v4.5h6V4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -2511,8 +2529,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.3</h1>
-        <p>阿杰同学 · V6.2.3 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.4</h1>
+        <p>阿杰同学 · V6.2.4 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2642,13 +2660,14 @@ window.__exportProgress = (function(){
             <div class="pdf-zone ocr-zone-card" id="ocrCardZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
               <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
               <div class="pdf-hint">点击或拖入 <strong>纸质火车票照片</strong><br>添加成功后自动弹出识别窗口（矫正 · 裁剪 · 识别）</div>
+              <!-- V6.2.4：状态提示移入虚线框内底部覆盖显示（absolute 不占流，不改变框内布局，不再挤压提示文字） -->
+              <div class="pdf-status" id="ocrCardStatus"></div>
             </div>
             <div class="pdf-btns">
               <button class="btn btn-add" id="ocrCardAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
               <button class="btn btn-mini ocr-card-clear" id="ocrCardClear" type="button" title="清除当前已导入的全部照片与识别结果（已生成的行程不受影响）"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清除已导入图片</button>
             </div>
           </div>
-          <div class="pdf-status" id="ocrCardStatus"></div>
         </div>
 
       </div>
@@ -7526,82 +7545,35 @@ $("bmExportModeSeg").addEventListener("click", function(e){
    视觉语言与「PDF 行程导入」保持一致：区域类名独立（.ocr-*），
    进度条 / 状态条复用 .pdf-progress / .pdf-status 全局样式
    ========================================================================== */
-.ocr-win .ocr-flex {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  gap: 9px;
-  align-items: stretch;
-}
+/* V6.2.4：窗内虚线拖放框已删除（原 .ocr-flex/.ocr-zone 一并移除）——
+   添加照片由卡片虚线框 / 「添加」按钮负责，窗内改为操作按钮行（添加/开始识别/清空） */
 .ocr-input {
   position: absolute;
   width: 1px; height: 1px;
   opacity: 0;
   pointer-events: none;
 }
-.ocr-win .ocr-btns {
-  flex: 1 1 0;
-  width: 88px;
+/* V6.2.4：操作按钮行——添加 / 开始识别 / 生成车票 / 清空，四钮同级等高；
+   开始识别弹性占满中段，其余按钮按内容自适应宽度 */
+.ocr-win .ocr-btn-row {
+  flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 7px;
+  gap: 8px;
+  align-items: stretch;
 }
-/* 两个按钮在 OCR 模块内与左侧长矩形等高，并各占一半高度（与 PDF 模块一致） */
-.ocr-win .ocr-btns .btn-add,
-.ocr-win .btn-run {
-  flex: 1 1 0;
-  align-self: stretch;
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  padding: 0 8px;
+.ocr-win .ocr-btn-row .btn,
+.ocr-win .ocr-btn-row .btn-run {
+  flex: none;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 14px;
   font-size: 12px;
   margin-top: 0;
   white-space: nowrap;
   box-shadow: none;
 }
+.ocr-win .ocr-btn-row #ocrRun { flex: 1 1 auto; }
 .ocr-win .btn-run[disabled] { opacity: .55; cursor: not-allowed; }
-.ocr-win .ocr-zone {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  border: 1.5px dashed var(--border-strong);
-  border-radius: 14px;
-  padding: 9px 11px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  background: var(--field-bg);
-  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast), transform var(--dur-fast) var(--spring), box-shadow var(--dur-fast);
-  overflow: hidden;
-  outline: none;
-}
-.ocr-win .ocr-zone:focus-visible {
-  border-color: var(--accent);
-  border-style: solid;
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.ocr-win .ocr-zone:hover,
-.ocr-win .ocr-zone.dragover {
-  border-color: var(--accent);
-  background: var(--accent-glow);
-}
-.ocr-win .ocr-zone:active { transform: scale(0.985); }
-.ocr-zone .pdf-icon {
-  position: relative;
-  z-index: 2;
-  width: 30px; height: 30px;
-  transition: transform .3s var(--spring), color .2s;
-  color: var(--text-dim);
-}
-.ocr-zone:hover .pdf-icon { transform: translateY(-3px) scale(1.12); color: var(--accent-text); }
-.ocr-zone .pdf-hint { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); position: relative; z-index: 2; }
-.ocr-zone .pdf-hint strong { color: var(--accent-text); font-weight: 650; }
 /* V6.2：识别进度顶条——标题栏下方独立一行，流光渐变动画，永不遮挡 */
 .ocr-top-prog {
   flex: none;
@@ -7817,11 +7789,10 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 .ocr-actions-bar { display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
+/* V6.2.4：引擎行是窗体第一个元素——去掉 .ocr-cloud-row 的上边距，顶部不留空隙 */
+.ocr-win .ocr-win-body > .ocr-cloud-row:first-child { margin-top: 0; }
 @media (max-width: 640px){
-  .ocr-win .ocr-flex { flex-direction: column; }
-  .ocr-win .ocr-btns { width: auto; flex-direction: row; }
-  .ocr-win .ocr-btns .btn-add,
-  .ocr-win .btn-run { height: 34px; min-height: 34px; }
+  .ocr-win .ocr-btn-row { flex-wrap: wrap; }
   .ocr-thumb { width: 84px; height: 58px; }
   .ocr-fname { max-width: 100%; }
   .ocr-win .ocr-list { max-height: none; }
@@ -7837,8 +7808,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   position: fixed;
   z-index: 2600;
   left: 0; top: 0;
-  width: 50vw;                    /* V6.2：默认占屏幕宽高各 50%（保留最小 600×400 与拖拽） */
-  height: 50vh;
+  width: 70vw;                    /* V6.2.4：占屏幕宽高各 70%（原 50%，保留最小 600×400 与拖拽） */
+  height: 70vh;
   min-width: 600px;
   min-height: 400px;
   max-width: calc(100vw - 24px);
@@ -7905,8 +7876,6 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   overflow: auto;
   padding: 14px 16px 16px;
 }
-.ocr-win .ocr-flex { flex: none; }
-.ocr-win .ocr-zone { min-height: 110px; }
 .ocr-win .ocr-list { max-height: none; flex: none; }
 @media (max-width: 720px){
   .ocr-win {
@@ -7922,12 +7891,11 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     border: 1px dashed var(--border-strong);
     box-shadow: none;
   }
-  /* V6.2.1：卡片按钮列在窄屏保持竖排但收窄，拖放区自适应 */
-  .card-ocr .pdf-btns { width: 74px; }
+  /* V6.2.1：卡片按钮列在窄屏保持竖排（V6.2.4：宽度随内容自适应，不再裁切文字） */
+  .card-ocr .pdf-btns { width: auto; }
   .ocr-win-head { cursor: default; padding: 8px 10px; }
   .ocr-win-close { display: none; }
   .ocr-win-body { padding: 10px; overflow: visible; }
-  .ocr-win .ocr-zone { min-height: 88px; }
 }
 </style>
 <!-- V6.1：纸质票扫描识别悬浮窗——桌面端独立窗体（可拖拽、标题栏+关闭按钮）；
@@ -7946,18 +7914,10 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     <span class="otp-text" id="ocrTopText">识别中…</span>
   </div>
   <div class="ocr-win-body">
-    <div class="ocr-flex">
-      <div class="ocr-zone" id="ocrZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
-        <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
-        <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）<br>已支持拍摄角度自动矫正与标准票幅裁剪</div>
-      </div>
-      <div class="ocr-btns">
-        <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
-        <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
-      </div>
-    </div>
-    <!-- V6.2.3：识别引擎选择移入悬浮窗（原一级界面卡片标题行）；默认 Agnes 3.0 Flash
-         视觉大模型识别（精度最高），本地引擎照片不出设备，联网引擎仅明确确认后才联网 -->
+    <!-- V6.2.4：窗内重排——①识别引擎行（最先）②联网 Key 配置行 ③操作按钮行
+         （添加 / 开始识别 / 清空——清空从底部操作条上提）④识别结果列表
+         ⑤底部操作条（仅 全部生成行程 / 导出CSV）⑥状态条；
+         删除窗内虚线拖放框（添加照片走卡片虚线框或「添加」按钮，拖入卡片同样进窗） -->
     <div class="ocr-cloud-row" id="ocrEngineRow">
       <label for="ocrEngineSel">识别引擎</label>
       <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：AI·Agnes 3.0 Flash = 视觉大模型直接读取票面（精度最高，联网）；超精度 = PP-OCRv6 深度学习模型（首次联网下载约 30MB 后可离线）；高精度 = PP-OCRv5（约 16MB）；轻量 = Tesseract（约 25MB）；联网·OCR.space = 免费云识别；联网·百度 = 百度智能云（需自建应用 Key，标准版免费 500 次/日）。联网引擎仅在明确选择并确认后才联网">
@@ -7987,18 +7947,20 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="btn btn-mini" id="ocrBaiduSave" type="button" title="保存到本机浏览器（不上传）">保存</button>
       <a class="ocr-cloud-link" href="https://console.bce.baidu.com/ai/?_=1758774408291#/ai/ocr/app/list" target="_blank" rel="noopener noreferrer">免费领取</a>
     </div>
-    <!-- V6.2.3：Agnes API Key 配置行（内置体验 Key，可替换为自有 Key；仅本机存储） -->
-    <div class="ocr-cloud-row" id="ocrAgnesRow" hidden>
-      <label for="ocrAgnesKey">Agnes</label>
-      <input type="text" id="ocrAgnesKey" placeholder="Agnes API Key" autocomplete="off" spellcheck="false">
-      <button class="btn btn-mini" id="ocrAgnesSave" type="button" title="保存 Key 到本机浏览器（不上传）">保存</button>
-      <a class="ocr-cloud-link" href="https://www.agnes-ai.cn/" target="_blank" rel="noopener noreferrer">获取 Key</a>
+    <!-- V6.2.4：Agnes Key 配置行整体移除——内置体验 Key 直接写入底层代码，
+         默认引擎开箱即用、免费识别，窗内不再暴露任何 Key 界面；
+         （选用 OCR.space / 百度等其它联网引擎时，才会出现对应引擎的 Key 行） -->
+    <!-- V6.2.4：操作按钮行——添加 / 开始识别 / 生成车票（原「全部生成行程」更名上移）/
+         清空，四钮同级等高，开始识别弹性占满中段 -->
+    <div class="ocr-btn-row">
+      <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
+      <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
+      <button class="btn" id="ocrApplyAll" type="button" title="把全部已识别票据按顺序各生成一条车票行程"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>生成车票</button>
+      <button class="btn" id="ocrClear" type="button" title="清空全部照片与识别结果"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清空</button>
     </div>
     <div class="ocr-list" id="ocrList" hidden></div>
     <div class="ocr-actions-bar" id="ocrActions" hidden>
-      <button class="btn btn-mini" id="ocrApplyAll" type="button" title="按顺序把全部已识别票据各生成一条行程"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>全部生成行程</button>
       <button class="btn btn-mini" id="ocrExport" type="button" title="把已确认（已生成行程）的识别结果导出为 CSV 文件"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>导出CSV</button>
-      <button class="btn btn-mini" id="ocrClear" type="button" title="清空全部照片与识别结果"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清空</button>
     </div>
     <div class="pdf-status" id="ocrStatus"></div>
   </div>
@@ -8011,6 +7973,17 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.4</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>修复</b> 卡片虚线框内<b>状态文字与提示文字重叠</b>：出现任何状态消息（已添加 / 识别完成 / 已生成车票等）时，框内「点击或拖入纸质火车票照片」提示文字与图标自动隐藏、由状态条直接取代；清空导入内容后提示自动恢复，布局不再相互叠压。</li>
+        <li><b>调整</b> 识别悬浮窗<b>操作按钮行重排</b>：原底部「全部生成行程」更名为<b>「生成车票」</b>并上移至「开始识别」旁，与<b>「清空」</b>一起和「开始识别」<b>同级等高</b>（清空按钮由小号改为标准尺寸、宽度随文字自适应），行内自左向右：添加 / 开始识别 / 生成车票 / 清空；底部操作条仅保留「导出CSV」。</li>
+        <li><b>精简</b> 识别悬浮窗<b>隐藏 Agnes API Key 配置行</b>：体验 Key 已直接写入底层代码，默认 AI 引擎开箱即用、免费识别，窗内不再出现任何 Key 界面（改选 OCR.space / 百度等其它联网引擎时才会出现对应 Key 行）。</li>
+        <li><b>修复</b> 一级界面卡片「添加 / 清除已导入图片」<b>按钮文字溢出</b>：按钮列由固定 88px 改为随内容自适应加宽，「清除已导入图片」等文字完整显示，不再被裁切。</li>
+        <li><b>调整</b> 卡片状态提示<b>移入虚线框内显示</b>：状态条改为拖放框内底部覆盖层（不占文档流、不改变框内布局），点「添加」后的反馈文字（已唤起文件选择…、自动矫正中等）直接显示在旁边的虚线框里，虚线框内的提示文字不再被挤压溢出。</li>
+        <li><b>新增</b> <b>拍摄方向自动矫正</b>：导入照片时除透视矫正外自动检测拍摄方向（0°/90°/180°/270°）——即使照片整个上下颠倒，也会先转正再进入矫正与识别流程，彻底解决「识别结果全反」的问题。</li>
+        <li><b>优化</b> 识别悬浮窗<b>尺寸提升至屏幕 70%</b>（原 50%）：照片缩略图、识别结果与字段核对区域更宽敞，保留窗口拖拽与最小尺寸限制。</li>
+        <li><b>调整</b> 识别悬浮窗<b>内容重排</b>：打开窗口后第一项为「识别引擎」切换，其下为操作按钮行与识别结果列表；删除窗内虚线拖放框（添加照片走卡片虚线框或「添加」按钮），窗内自上而下：识别引擎 → 添加 / 开始识别 / 生成车票 / 清空 → 识别结果 → 导出CSV → 状态提示。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.3</b><span>2026-09-26</span></div>
       <ul>
         <li><b>新增</b> <b>AI 识别引擎（Agnes 3.0 Flash）</b>并设为默认：视觉大模型直接「看」票面照片输出逐行文字，对歪斜、模糊、小字的理解能力远超传统「检测-识别」两级 OCR 管线，识别精度大幅提升。OpenAI 兼容接口接入，内置体验 Key 开箱即用，也可在识别窗口内替换为自有 Key（仅存本机）；识别时照片将上传 Agnes 云端——仅在明确选择并确认后才联网，云端失败自动回退本地引擎。</li>
@@ -8794,10 +8767,12 @@ let workerPromise = null;
 let libBase = -1;
 
 const $ = function(id){ return document.getElementById(id); };
-const zone = $("ocrZone"), fileInput = $("ocrFile"), listEl = $("ocrList"),
+/* V6.2.4：窗内虚线拖放框（#ocrZone）已删除——添加统一走卡片虚线框 / 「添加」按钮 */
+const fileInput = $("ocrFile"), listEl = $("ocrList"),
     runBtn = $("ocrRun"), addBtn = $("ocrAdd"), statusEl = $("ocrStatus"),
     progressEl = $("ocrTopProg"), progressFill = $("ocrTopFill"),
     progressText = $("ocrTopText"), actionsEl = $("ocrActions"),
+    applyBtn = $("ocrApplyAll"),
     engineChip = $("ocrEngineChip"),
     engineSel = $("ocrEngineSel");
 
@@ -8858,17 +8833,17 @@ if(engineSel){
 }
 function syncCloudRow(){
     var pref = getOcrEnginePref();
-    var row1 = document.getElementById("ocrCloudRow"), row2 = document.getElementById("ocrBaiduRow"), row3 = document.getElementById("ocrAgnesRow");
+    var row1 = document.getElementById("ocrCloudRow"), row2 = document.getElementById("ocrBaiduRow");
+    /* V6.2.4：Agnes Key 行已整体移除（内置 Key 写入底层代码，免费直接用） */
     if(row1) row1.hidden = pref !== "cloud";
     if(row2) row2.hidden = pref !== "cloudBaidu";
-    if(row3) row3.hidden = pref !== "agnes";
 }
 function getCloudKey(){
     try{ return (localStorage.getItem("__ocrCloudKey") || "").trim() || "helloworld"; }
     catch(e){ return "helloworld"; }
 }
-/* V6.2.3：Agnes（视觉大模型）Key——内置体验 Key 作为种子默认值，
-   用户可在识别窗口内填写自有 Key（localStorage __ocrAgnesKey 优先） */
+/* V6.2.3：Agnes（视觉大模型）Key——内置体验 Key 作为种子默认值写入底层代码，
+   免费直接用（localStorage __ocrAgnesKey 优先；V6.2.4 起窗内不再提供 Key 界面） */
 var AGNES_KEY_SEED = "sk-ePNo3uy3RbMxV2hwPtsiybiG5G1dhhUNka7IZljdsmDmrcO8";
 function getAgnesKey(){
     try{ return (localStorage.getItem("__ocrAgnesKey") || "").trim() || AGNES_KEY_SEED; }
@@ -8897,20 +8872,18 @@ function getBaiduSecret(){ try{ return (localStorage.getItem("__ocrBaiduSecret")
             showStatus("ok", "百度 Key 已保存到本机浏览器（仅本地存储）");
         }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
     });
-    /* V6.2.3：Agnes Key 保存与恢复（预填内置体验 Key，可替换为自有 Key） */
-    var ai = document.getElementById("ocrAgnesKey"), btn3 = document.getElementById("ocrAgnesSave");
-    if(ai && !ai.value) ai.value = getAgnesKey();
-    if(btn3) btn3.addEventListener("click", function(){
-        try{
-            localStorage.setItem("__ocrAgnesKey", (ai && ai.value || "").trim());
-            showStatus("ok", "Agnes Key 已保存到本机浏览器（仅本地存储）");
-        }catch(e){ showStatus("err", "保存失败：浏览器存储不可用"); }
-    });
+    /* V6.2.4：Agnes Key 输入行/眼睛切换/保存按钮已随 #ocrAgnesRow 一并移除——
+       Key 直接取 getAgnesKey()（localStorage __ocrAgnesKey 优先，否则内置种子），
+       窗内不再出现任何 Agnes Key 界面 */
 })();
 
 /* V6.2.1：状态条双写——悬浮窗内 #ocrStatus 与卡片 #ocrCardStatus 保持同步；
    V6.2.3：卡片「开始识别」按钮已删除（添加成功即自动弹窗，识别在窗内进行） */
 var cardStatusEl = $("ocrCardStatus"), cardZone = $("ocrCardZone");
+/* V6.2.4：有状态消息时隐藏卡片虚线框内的提示文字与图标——状态条直接取而代之，
+   不再与「点击或拖入…」文字重叠；消息清空后（如一键清除）提示自动恢复 */
+var cardHintEl = cardZone ? cardZone.querySelector(".pdf-hint") : null;
+var cardIconEl = cardZone ? cardZone.querySelector(".pdf-icon") : null;
 function showStatus(cls, msg){
     statusEl.className = "pdf-status" + (cls ? " " + cls : "");
     statusEl.style.display = msg ? "block" : "none";
@@ -8920,6 +8893,8 @@ function showStatus(cls, msg){
         cardStatusEl.style.display = statusEl.style.display;
         cardStatusEl.textContent = statusEl.textContent;
     }
+    if(cardHintEl) cardHintEl.style.display = msg ? "none" : "";
+    if(cardIconEl) cardIconEl.style.display = msg ? "none" : "";
 }
 /* V6.2：进度顶条驱动——pct 为空时进入滑动光块（不定进度，如引擎/模型加载），否则显示百分比 */
 function setOcrBar(pct){
@@ -10522,6 +10497,7 @@ function updateChipAll(){ items.forEach(updateChip); }
 function syncButtons(){
     const hasPending = items.some(it => it.status === "pending" || it.status === "error");
     runBtn.disabled = running || !hasPending;
+    if(applyBtn) applyBtn.disabled = running || !items.length;   // V6.2.4：生成车票移入按钮行，改用禁用态
     listEl.hidden = !items.length;
     actionsEl.hidden = !items.length;
 }
@@ -10570,6 +10546,60 @@ function pumpRectify(){
         pumpRectify();
     });
 }
+/* ---------------- V6.2.4 拍摄方向矫正（0°/90°/180°/270°） ----------------
+   红票的红色印刷区集中在票面上半部（蓝票红色元素极少）——把图缩到 160px 宽，
+   逐像素统计「红色」在上下/左右半的分布，对四个旋转候选各算「转正后上半红像素数 −
+   下半红像素数」得分，取最高者；得分不足（红像素太少 / 上下差距不明显）则保持 0°，
+   误判率远低于「整图文字方向」启发式，且不会破坏端正图片 */
+function orientTicket(cv){
+    if(!cv || !cv.width || !cv.height) return 0;
+    try{
+        const W = 160;
+        const sc = W / cv.width;
+        const tw = W, th = Math.max(1, Math.round(cv.height * sc));
+        const tmp = document.createElement("canvas");
+        tmp.width = tw; tmp.height = th;
+        const c = tmp.getContext("2d", { willReadFrequently: true });
+        c.drawImage(cv, 0, 0, tw, th);
+        const d = c.getImageData(0, 0, tw, th).data;
+        let top = 0, bottom = 0, left = 0, right = 0;
+        for(let y = 0; y < th; y++){
+            for(let x = 0; x < tw; x++){
+                const o = (y * tw + x) * 4, r = d[o], g = d[o + 1], b = d[o + 2];
+                if(r > 110 && r - g > 35 && r - b > 35){
+                    if(y < th / 2) top++; else bottom++;
+                    if(x < tw / 2) left++; else right++;
+                }
+            }
+        }
+        /* 顺时针旋转 deg 后位于上半的红色像素数（90°：原左半转到上方；270°：原右半到上方） */
+        const cands = [
+            { deg: 0,   tp: top,    bt: bottom },
+            { deg: 90,  tp: left,   bt: right },
+            { deg: 180, tp: bottom, bt: top },
+            { deg: 270, tp: right,  bt: left }
+        ];
+        let best = cands[0];
+        for(let i = 1; i < cands.length; i++){ if(cands[i].tp > best.tp) best = cands[i]; }
+        if(best.tp >= 6 && best.tp > best.bt * 1.25) return best.deg;
+        orientTicket.lastDeg = 0;
+        return 0;
+    }catch(e){ return 0; }
+}
+orientTicket.lastDeg = 0;   // 诊断探针：最近一次判定（含 0）
+/* 把 canvas 按顺时针 deg 旋转（90/270 交换宽高），返回新画布（deg=0 原样返回） */
+function rotateCanvasCw(cv, deg){
+    if(!deg || !cv) return cv;
+    const w = cv.width, h = cv.height, swap = (deg === 90 || deg === 270);
+    const out = document.createElement("canvas");
+    out.width = swap ? h : w;
+    out.height = swap ? w : h;
+    const c = out.getContext("2d");
+    c.translate(out.width / 2, out.height / 2);
+    c.rotate(deg * Math.PI / 180);
+    c.drawImage(cv, -w / 2, -h / 2);
+    return out;
+}
 async function rectifyOne(it){
     if(!it || it.rectifyTried) return null;
     it.rectifyTried = true;
@@ -10577,39 +10607,68 @@ async function rectifyOne(it){
         const src = await fileToBitmap(it.file);
         let dk = null;
         try{ dk = deskewTicket(src); }catch(e){ dk = null; }
-        if(src && src.close){ try{ src.close(); }catch(e){} }
-        if(!dk || !dk.cv) return { it: it, ok: false };
-        const cv = dk.cv;
-        await new Promise(function(resolve){
-            try{
-                cv.toBlob(function(blob){
-                    try{
-                        if(blob){
-                            it.file = new File([blob],
-                                String(it.name || "ticket").replace(/\.[A-Za-z0-9]+$/, "") + "_矫正.jpg",
-                                { type: "image/jpeg" });
-                            it.rectified = true;
-                            const w = cv.width, h = cv.height;
-                            const sc = Math.min(1, 480 / Math.max(w, h));
-                            const th = document.createElement("canvas");
-                            th.width = Math.max(1, Math.round(w * sc));
-                            th.height = Math.max(1, Math.round(h * sc));
-                            th.getContext("2d").drawImage(cv, 0, 0, th.width, th.height);
-                            it.thumbUrl2 = th.toDataURL("image/jpeg", 0.82);
-                            const timg = it.el && it.el.querySelector(".ocr-thumb");
-                            if(timg){
-                                timg.src = it.thumbUrl2;
-                                deferRevoke(it.thumbUrl); it.thumbUrl = "";   // V6.2.2：延迟回收旧 blob 缩略图
+        if(dk && dk.cv){
+            /* V6.2.4：透视矫正成功后先做方向矫正——180° 倒置等旋转票面转正再入列 */
+            let cv = dk.cv;
+            const deg = orientTicket(cv);
+            orientTicket.lastDeg = deg;
+            if(deg) cv = rotateCanvasCw(cv, deg);
+            if(src && src.close){ try{ src.close(); }catch(e){} }
+            await new Promise(function(resolve){
+                try{
+                    cv.toBlob(function(blob){
+                        try{
+                            if(blob){
+                                it.file = new File([blob],
+                                    String(it.name || "ticket").replace(/\.[A-Za-z0-9]+$/, "") + "_矫正.jpg",
+                                    { type: "image/jpeg" });
+                                it.rectified = true;
+                                const w = cv.width, h = cv.height;
+                                const sc = Math.min(1, 480 / Math.max(w, h));
+                                const th = document.createElement("canvas");
+                                th.width = Math.max(1, Math.round(w * sc));
+                                th.height = Math.max(1, Math.round(h * sc));
+                                th.getContext("2d").drawImage(cv, 0, 0, th.width, th.height);
+                                it.thumbUrl2 = th.toDataURL("image/jpeg", 0.82);
+                                const timg = it.el && it.el.querySelector(".ocr-thumb");
+                                if(timg){
+                                    timg.src = it.thumbUrl2;
+                                    deferRevoke(it.thumbUrl); it.thumbUrl = "";   // V6.2.2：延迟回收旧 blob 缩略图
+                                }
+                                if(it.el) it.el.classList.add("rectified");
+                                updateChip(it);
                             }
-                            if(it.el) it.el.classList.add("rectified");
-                            updateChip(it);
-                        }
-                    }catch(e){}
-                    resolve();
-                }, "image/jpeg", 0.92);
-            }catch(e){ resolve(); }
-        });
-        return { it: it, ok: !!it.rectified };
+                        }catch(e){}
+                        resolve();
+                    }, "image/jpeg", 0.92);
+                }catch(e){ resolve(); }
+            });
+            return { it: it, ok: !!it.rectified };
+        }
+        /* V6.2.4：透视矫正失败时仍做方向矫正——180° 倒置的原图先转正再入列
+           （rectified 不置位，识别时 recognizeItem 会再做 deskew + 标准票幅裁剪） */
+        let deg0 = 0;
+        try{ deg0 = orientTicket(src); }catch(e){ deg0 = 0; }
+        orientTicket.lastDeg = deg0;
+        if(deg0){
+            const rc = rotateCanvasCw(src, deg0);
+            await new Promise(function(resolve){
+                try{
+                    rc.toBlob(function(blob){
+                        try{
+                            if(blob){
+                                it.file = new File([blob],
+                                    String(it.name || "ticket").replace(/\.[A-Za-z0-9]+$/, "") + "_转正.jpg",
+                                    { type: "image/jpeg" });
+                            }
+                        }catch(e){}
+                        resolve();
+                    }, "image/jpeg", 0.92);
+                }catch(e){ resolve(); }
+            });
+        }
+        if(src && src.close){ try{ src.close(); }catch(e){} }
+        return { it: it, ok: false };
     }catch(e){
         return { it: it, ok: false };
     }
@@ -10805,11 +10864,8 @@ function bindDrop(zoneEl){
         if(fl) addFiles(fl);
     });
 }
-zone.addEventListener("click", pickFiles);
-zone.addEventListener("keydown", function(e){
-    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pickFiles(); }
-});
-bindDrop(zone);
+/* V6.2.4：窗内虚线拖放框已删除——原先 zone 的 click/keydown/drop 绑定一并移除，
+   只保留卡片虚线框与「添加」按钮的绑定（否则 null.addEventListener 会中断模块装配） */
 /* V6.2.1：卡片拖放区与按钮（参照 PDF 导入卡片布局）——与悬浮窗共用同一 items 队列 */
 if(cardZone){
     cardZone.addEventListener("click", pickFiles);
@@ -10846,6 +10902,10 @@ $("ocrClear").addEventListener("click", function(){
     clearAllItems();
 });
 
+/* V6.2.4：「生成车票」移入按钮行后不再受 actions 条 hidden 掩护——装配完成后
+   立即同步一次按钮禁用态（无识别结果时 开始识别/生成车票 均禁用） */
+syncButtons();
+
 /* ---------------- 调试钩子 ---------------- */
 window.__ocrParse = parseOcrText;
 window.__ocrItems = items;
@@ -10855,6 +10915,7 @@ window.__ocrApplyItem = applyItem;
 window.__ocrApplyAll = applyAll;
 window.__ocrGetWorker = getWorker;
 window.__deskew = deskewTicket;              // V6.2：透视矫正独立验证（传入 img/canvas/File）
+window.__orientTicket = orientTicket;        // V6.2.4：方向矫正独立验证（传入 img/canvas/File）
 window.__ocrGetEngine = getEngine;           // V6.2：引擎选择/回退链验证
 window.__ocrState = function(){
     return { running: running, count: items.length, statuses: items.map(it => it.status) };
