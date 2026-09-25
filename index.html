@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.0</title>
+<title>12306火车票票根编辑器V6.1</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2419,8 +2419,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.0</h1>
-        <p>阿杰同学 · V6.0 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.1</h1>
+        <p>阿杰同学 · V6.1 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2547,28 +2547,12 @@ window.__exportProgress = (function(){
             </div>
           </div>
           <input type="file" id="ocrFile" accept="image/*" multiple class="ocr-input">
-          <div class="ocr-flex">
-            <div class="ocr-zone" id="ocrZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
-              <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
-              <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）</div>
-              <!-- 识别进度为拖放区内覆盖层（与 PDF 模块一致），不占布局空间 -->
-              <div class="pdf-progress" id="ocrProgress" hidden>
-                <div class="pdf-progress-bar"><span id="ocrProgressFill"></span></div>
-                <div class="pdf-progress-text" id="ocrProgressText">识别中…</div>
-              </div>
-            </div>
-            <div class="ocr-btns">
-              <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
-              <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
-            </div>
+          <!-- V6.1：桌面端紧凑入口行——完整操作流程（拖放区/列表/进度/批量操作）整体移入
+               独立悬浮窗 #ocrWin（挂载于页面顶层，避免卡片 transform/overflow 裁剪），卡片内不再拥挤 -->
+          <div class="ocr-entry" id="ocrEntry">
+            <button class="btn-run btn-extract" id="ocrOpenWin" type="button" title="打开图片添加与识别窗口（独立悬浮窗，可拖拽）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加图片</button>
+            <span class="ocr-entry-hint">在独立窗口中导入照片并识别 · <b id="ocrEntryCount">尚未添加照片</b></span>
           </div>
-          <div class="ocr-list" id="ocrList" hidden></div>
-          <div class="ocr-actions-bar" id="ocrActions" hidden>
-            <button class="btn btn-mini" id="ocrApplyAll" type="button" title="按顺序把全部已识别票据各生成一条行程"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>全部生成行程</button>
-            <button class="btn btn-mini" id="ocrExport" type="button" title="把已确认（已生成行程）的识别结果导出为 CSV 文件"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>导出CSV</button>
-            <button class="btn btn-mini" id="ocrClear" type="button" title="清空全部照片与识别结果"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清空</button>
-          </div>
-          <div class="pdf-status" id="ocrStatus"></div>
         </div>
 
       </div>
@@ -7433,7 +7417,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
    视觉语言与「PDF 行程导入」保持一致：区域类名独立（.ocr-*），
    进度条 / 状态条复用 .pdf-progress / .pdf-status 全局样式
    ========================================================================== */
-.card-ocr .ocr-flex {
+.ocr-win .ocr-flex {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -7446,7 +7430,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   opacity: 0;
   pointer-events: none;
 }
-.card-ocr .ocr-btns {
+.ocr-win .ocr-btns {
   flex: 1 1 0;
   width: 88px;
   display: flex;
@@ -7454,8 +7438,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   gap: 7px;
 }
 /* 两个按钮在 OCR 模块内与左侧长矩形等高，并各占一半高度（与 PDF 模块一致） */
-.card-ocr .ocr-btns .btn-add,
-.card-ocr .btn-run {
+.ocr-win .ocr-btns .btn-add,
+.ocr-win .btn-run {
   flex: 1 1 0;
   align-self: stretch;
   width: 100%;
@@ -7467,8 +7451,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   white-space: nowrap;
   box-shadow: none;
 }
-.card-ocr .btn-run[disabled] { opacity: .55; cursor: not-allowed; }
-.card-ocr .ocr-zone {
+.ocr-win .btn-run[disabled] { opacity: .55; cursor: not-allowed; }
+.ocr-win .ocr-zone {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -7488,17 +7472,17 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   overflow: hidden;
   outline: none;
 }
-.card-ocr .ocr-zone:focus-visible {
+.ocr-win .ocr-zone:focus-visible {
   border-color: var(--accent);
   border-style: solid;
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
-.card-ocr .ocr-zone:hover,
-.card-ocr .ocr-zone.dragover {
+.ocr-win .ocr-zone:hover,
+.ocr-win .ocr-zone.dragover {
   border-color: var(--accent);
   background: var(--accent-glow);
 }
-.card-ocr .ocr-zone:active { transform: scale(0.985); }
+.ocr-win .ocr-zone:active { transform: scale(0.985); }
 .ocr-zone .pdf-icon {
   position: relative;
   z-index: 2;
@@ -7509,7 +7493,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 .ocr-zone:hover .pdf-icon { transform: translateY(-3px) scale(1.12); color: var(--accent-text); }
 .ocr-zone .pdf-hint { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); position: relative; z-index: 2; }
 .ocr-zone .pdf-hint strong { color: var(--accent-text); font-weight: 650; }
-.card-ocr .pdf-progress {
+.ocr-win .pdf-progress {
   position: absolute;
   left: 10px; right: 10px; bottom: 10px;
   margin: 0;
@@ -7519,7 +7503,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   border-radius: 10px;
   box-shadow: 0 6px 16px rgba(0,0,0,.18);
 }
-.card-ocr .pdf-status { margin-top: 8px; }
+.ocr-win .pdf-status { margin-top: 8px; }
 /* 引擎状态小徽标（标题行右侧） */
 .ocr-engine-chip {
   font-size: 10.5px;
@@ -7548,7 +7532,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 }
 .ocr-engine-sel:focus-visible { border-color: var(--border-focus, #F5A623); }
 /* 识别结果列表 */
-.card-ocr .ocr-list {
+.ocr-win .ocr-list {
   margin-top: 8px;
   display: flex;
   flex-direction: column;
@@ -7630,15 +7614,165 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 }
 .ocr-actions-bar { display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
 @media (max-width: 640px){
-  .card-ocr .ocr-flex { flex-direction: column; }
-  .card-ocr .ocr-btns { width: auto; flex-direction: row; }
-  .card-ocr .ocr-btns .btn-add,
-  .card-ocr .btn-run { height: 34px; min-height: 34px; }
+  .ocr-win .ocr-flex { flex-direction: column; }
+  .ocr-win .ocr-btns { width: auto; flex-direction: row; }
+  .ocr-win .ocr-btns .btn-add,
+  .ocr-win .btn-run { height: 34px; min-height: 34px; }
   .ocr-thumb { width: 84px; height: 58px; }
   .ocr-fname { max-width: 100%; }
-  .card-ocr .ocr-list { max-height: none; }
+  .ocr-win .ocr-list { max-height: none; }
+}
+/* ==========================================================================
+   V6.1 · OCR 悬浮窗（桌面端独立窗体 / 移动端内联回退）
+   - .ocr-entry：卡片内紧凑入口行（仅桌面端显示）
+   - .ocr-win：窗体外壳挂页面顶层（body 直属），桌面端 fixed + 可拖拽；
+     移动端(≤720px)由 JS 搬回 #cardOcr 内转内联面板
+   ========================================================================== */
+.ocr-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.ocr-entry .btn-run {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 18px;
+  font-size: 13px;
+}
+.ocr-entry-hint { font-size: 12px; color: var(--text-dim); }
+.ocr-entry-hint b { color: var(--accent-text); font-weight: 650; }
+.ocr-win {
+  position: fixed;
+  z-index: 2600;
+  left: 0; top: 0;
+  width: 680px;
+  height: 480px;
+  min-width: 600px;
+  min-height: 400px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(8, 12, 18, .30), 0 4px 16px rgba(8, 12, 18, .18);
+  overflow: hidden;
+}
+.ocr-win[hidden] { display: none; }
+.ocr-win-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2, var(--surface));
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.ocr-win-head:active { cursor: grabbing; }
+.ocr-win-ico {
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-text);
+  background: var(--accent-glow);
+  flex: none;
+}
+.ocr-win-title { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.ocr-win-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ocr-win-close {
+  flex: none;
+  width: 26px; height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.ocr-win-close:hover { background: rgba(242, 89, 94, .12); color: var(--danger); }
+.ocr-win-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 16px;
+}
+.ocr-win .ocr-flex { flex: none; }
+.ocr-win .ocr-zone { min-height: 110px; }
+.ocr-win .ocr-list { max-height: none; flex: none; }
+@media (max-width: 720px){
+  .ocr-entry { display: none; }
+  .ocr-win {
+    position: static;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+    margin-top: 10px;
+    border-radius: 12px;
+    border: 1px dashed var(--border-strong);
+    box-shadow: none;
+  }
+  .ocr-win-head { cursor: default; padding: 8px 10px; }
+  .ocr-win-close { display: none; }
+  .ocr-win-body { padding: 10px; overflow: visible; }
+  .ocr-win .ocr-zone { min-height: 88px; }
 }
 </style>
+<!-- V6.1：纸质票扫描识别悬浮窗——桌面端独立窗体（可拖拽、标题栏+关闭按钮）；
+     移动端/窄屏(≤720px)由 JS 搬回卡片内并转为内联面板，保持原自适应布局 -->
+<div class="ocr-win" id="ocrWin" hidden>
+  <div class="ocr-win-head" id="ocrWinHead" title="按住拖动窗口">
+    <span class="ocr-win-ico" aria-hidden="true"><svg class="ic"><use href="#i-image"/></svg></span>
+    <span class="ocr-win-title">纸质票扫描识别 · 添加图片</span>
+    <span class="ocr-win-sub" id="ocrWinSub"></span>
+    <button class="ocr-win-close" id="ocrWinClose" type="button" aria-label="关闭窗口" title="关闭窗口（Esc）"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="ocr-win-body">
+    <div class="ocr-flex">
+      <div class="ocr-zone" id="ocrZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
+        <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
+        <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）</div>
+        <!-- 识别进度为拖放区内覆盖层（与 PDF 模块一致），不占布局空间 -->
+        <div class="pdf-progress" id="ocrProgress" hidden>
+          <div class="pdf-progress-bar"><span id="ocrProgressFill"></span></div>
+          <div class="pdf-progress-text" id="ocrProgressText">识别中…</div>
+        </div>
+      </div>
+      <div class="ocr-btns">
+        <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
+        <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
+      </div>
+    </div>
+    <div class="ocr-list" id="ocrList" hidden></div>
+    <div class="ocr-actions-bar" id="ocrActions" hidden>
+      <button class="btn btn-mini" id="ocrApplyAll" type="button" title="按顺序把全部已识别票据各生成一条行程"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>全部生成行程</button>
+      <button class="btn btn-mini" id="ocrExport" type="button" title="把已确认（已生成行程）的识别结果导出为 CSV 文件"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>导出CSV</button>
+      <button class="btn btn-mini" id="ocrClear" type="button" title="清空全部照片与识别结果"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清空</button>
+    </div>
+    <div class="pdf-status" id="ocrStatus"></div>
+  </div>
+</div>
 <div class="cl-mask" id="clMask" role="presentation" hidden>
   <div class="cl-card" role="dialog" aria-modal="true" aria-labelledby="clTitle">
     <div class="cl-head">
@@ -7647,6 +7781,11 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.1</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>优化</b> 桌面端「纸质票扫描识别」布局重构：照片导入与识别的完整操作流程（拖放区、照片列表、识别进度、批量操作与状态提示）整体移入<b>独立悬浮窗口</b>——点击卡片内「添加图片」按钮即弹出，默认约 680×480（最小 600×400），带独立标题栏、实时照片数量提示与关闭按钮，按住标题栏可<b>任意拖拽</b>（自动保持在屏幕内，Esc 亦可关闭）；卡片本身只留紧凑入口行，不再出现内容过度压缩、元素挤成一条的问题，票面预览与编辑区一目了然。</li>
+        <li><b>说明</b> 悬浮窗关闭后照片与识别结果保留，再次点击「添加图片」即恢复原窗口内容继续操作；程序化导入照片时窗口自动弹出。移动端与窄屏（≤720px）保持原有卡片内自适应布局不变，拍照识别体验不受影响。</li>
+      </ul>
       <div class="cl-ver"><b>V6.0</b><span>2026-09-26</span></div>
       <ul>
         <li><b>新增</b> 「纸质票拍照识别（OCR）」功能模块（PDF 导入卡片下方新卡片）：拍摄或选择纸质火车票照片，自动在本地识别票面文字并回填——车次、出发/到达站、乘车日期、开车时间、车厢座位、席别、票价、姓名、证件号（打码）、检票口、红字票号与底部电子票号等字段一键入表。</li>
@@ -9516,6 +9655,156 @@ window.__ocrGetWorker = getWorker;
 window.__ocrState = function(){
     return { running: running, count: items.length, statuses: items.map(it => it.status) };
 };
+})();
+
+/* ==========================================================================
+   V6.1 · OCR 悬浮窗管理器
+   - 桌面端(>720px)：#ocrWin 搬到 body 顶层（避开 .card 的 riseIn 常驻 transform
+     造成的 fixed 定位基准偏移与 overflow:hidden 裁剪），点击「添加图片」弹出，
+     标题栏可拖拽（Pointer Events，自动夹在视口内），关闭按钮/Esc 关闭；
+     关闭仅隐藏，照片与识别结果保留。
+   - 移动端/窄屏(≤720px)：#ocrWin 搬回 #cardOcr 末尾转内联面板常显，
+     入口行隐藏，保持 V6.0 的卡内自适应布局不变。
+   - 徽标同步：MutationObserver 监听 #ocrList 子项变化，刷新入口行数量
+     提示与窗体标题栏副标题。
+   ========================================================================== */
+(function(){
+"use strict";
+const win = document.getElementById("ocrWin");
+const card = document.getElementById("cardOcr");
+if(!win || !card) return;
+const head = document.getElementById("ocrWinHead");
+const closeBtn = document.getElementById("ocrWinClose");
+const openBtn = document.getElementById("ocrOpenWin");
+const listEl = document.getElementById("ocrList");
+const entryCount = document.getElementById("ocrEntryCount");
+const winSub = document.getElementById("ocrWinSub");
+const mqMobile = window.matchMedia("(max-width: 720px)");
+let centered = false;   // 桌面端是否已初始化默认位置（首次弹出居中略偏上）
+let drag = null;        // 拖拽状态 {px,py,left,top}
+
+function isMobile(){ return mqMobile.matches; }
+
+/* 按模式归位窗体外壳：桌面挂 body（fixed 生效），移动端搬回卡片（内联显示） */
+function place(){
+    if(isMobile()){
+        if(win.parentNode !== card){
+            win.style.left = ""; win.style.top = "";
+            centered = false;
+            card.appendChild(win);
+        }
+        win.hidden = false;              // 内联常显
+    }else if(win.parentNode !== document.body){
+        document.body.appendChild(win);
+        win.hidden = true;               // 桌面端初始隐藏，等「添加图片」唤起
+    }
+}
+
+/* 首次弹出：居中略偏上（视觉重心更稳） */
+function centerPos(){
+    const w = win.offsetWidth, h = win.offsetHeight;
+    return {
+        left: Math.max(12, Math.round((window.innerWidth - w) / 2)),
+        top: Math.max(12, Math.round((window.innerHeight - h) / 3))
+    };
+}
+
+/* 拖拽/缩放后把窗口夹回视口：窗口比视口小时保留 80×44 可见区域便于抓回；
+   放得下则完全夹在视口内（8px 边距），避免拖一下就大半出屏 */
+function clampPos(){
+    const l = parseFloat(win.style.left), t = parseFloat(win.style.top);
+    if(isNaN(l) || isNaN(t)) return;
+    const w = win.offsetWidth, h = win.offsetHeight;
+    const minL = 8 - w + 80;
+    const maxL = w <= window.innerWidth - 16 ? window.innerWidth - w - 8 : window.innerWidth - 88;
+    const minT = 8;
+    const maxT = h <= window.innerHeight - 16 ? window.innerHeight - h - 8 : window.innerHeight - 44;
+    win.style.left = Math.min(Math.max(l, minL), Math.max(maxL, minL)) + "px";
+    win.style.top  = Math.min(Math.max(t, minT), Math.max(maxT, minT)) + "px";
+}
+
+function openWin(){
+    place();
+    if(isMobile()) return;               // 移动端内联常显，无需开窗
+    if(win.hidden){
+        win.hidden = false;
+        if(!centered){
+            const p = centerPos();
+            win.style.left = p.left + "px";
+            win.style.top = p.top + "px";
+            centered = true;
+        }
+        clampPos();
+    }
+}
+function closeWin(){
+    if(isMobile()) return;               // 移动端不提供关闭（常显）
+    win.hidden = true;
+}
+
+/* 标题栏拖拽（排除关闭按钮）；pointer capture 保证快速拖动不丢事件 */
+head.addEventListener("pointerdown", function(e){
+    if(isMobile() || win.hidden) return;
+    if(e.target.closest && e.target.closest(".ocr-win-close")) return;
+    const r = win.getBoundingClientRect();
+    drag = { px: e.clientX, py: e.clientY, left: r.left, top: r.top };
+    try{ head.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+});
+head.addEventListener("pointermove", function(e){
+    if(!drag) return;
+    win.style.left = (drag.left + e.clientX - drag.px) + "px";
+    win.style.top  = (drag.top  + e.clientY - drag.py) + "px";
+});
+function endDrag(){
+    if(!drag) return;
+    drag = null;
+    clampPos();
+}
+head.addEventListener("pointerup", endDrag);
+head.addEventListener("pointercancel", endDrag);
+
+openBtn && openBtn.addEventListener("click", openWin);
+closeBtn && closeBtn.addEventListener("click", closeWin);
+document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !isMobile() && !win.hidden &&
+       !document.querySelector(".dt-mask.show, .bm-editor.show")){   // 不抢细节调整/背面编辑器的 Esc
+        closeWin();
+    }
+});
+
+/* 模式切换 / 窗口缩放：重新归位并夹取位置 */
+mqMobile.addEventListener ? mqMobile.addEventListener("change", place)
+                          : mqMobile.addListener(place);
+window.addEventListener("resize", function(){
+    place();
+    if(!isMobile() && !win.hidden) clampPos();
+});
+
+/* 数量徽标：照片列表子项变化即刷新（renderList 重建子节点会触发） */
+function syncBadge(){
+    const n = listEl ? listEl.children.length : 0;
+    const txt = n ? "已添加 " + n + " 张照片" : "尚未添加照片";
+    if(entryCount) entryCount.textContent = txt;
+    if(winSub) winSub.textContent = n ? "共 " + n + " 张照片" : "";
+}
+if(listEl && window.MutationObserver){
+    new MutationObserver(syncBadge).observe(listEl, { childList: true });
+}
+syncBadge();
+
+/* 外部加文件（window.__ocrAddFiles）时桌面端自动弹出窗口，避免"加了照片却看不见" */
+if(typeof window.__ocrAddFiles === "function"){
+    const rawAdd = window.__ocrAddFiles;
+    window.__ocrAddFiles = function(files){
+        const r = rawAdd(files);
+        openWin();
+        syncBadge();
+        return r;
+    };
+}
+
+place();
 })();
 </script>
 </body>
