@@ -4,7 +4,7 @@
 
 *纯前端 · 单文件 · 零依赖 · 数据不出浏览器*
 
-![Version](https://img.shields.io/badge/version-5.5-2E7CF6)
+![Version](https://img.shields.io/badge/version-5.6-2E7CF6)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -41,7 +41,7 @@
 - **多行程同步渲染**：一个行程完成细节调整后，自动同步到其余所有行程并重新渲染
 - **12306 行程 PDF 智能导入**：拖入官方「行程信息提示」PDF，自动解析并回填站名 / 车次 / 日期 / 座位 / 金额等字段；手动修改优先，空白不覆盖已填内容
 - **智能联想**：站点 / 车次输入联想补全，站名拼音自动联动
-- **导出便捷**：单张直接下载 PNG，多张自动打包 ZIP；导出文件名按「车次_日期_站名」规范命名
+- **导出便捷**：单张直接下载 PNG，多张自动打包 ZIP；导出文件名按「车次_日期_站名」规范命名；触屏设备支持长按保存图片，兼容夸克 / UC 等移动内核
 - **本地持久化与分享**：行程数据 JSON 序列化（LZ-String 压缩 → URL），刷新不丢失，可生成携带数据的分享链接
 - **明暗双主题**：铁路信号台设计语言，全套自绘图标
 
@@ -83,9 +83,9 @@ python3 -m http.server 8080
 
 ```text
 GitHub火车票编辑器/
-├── index.html      # 应用本体（V5.5，含全部样式 / 脚本 / 内嵌底图资源）
+├── index.html      # 应用本体（V5.6，含全部样式 / 脚本 / 内嵌底图资源）
 ├── README.md
-├── CHANGELOG.md    # 版本日志（V4.0 → V5.5）
+├── CHANGELOG.md    # 版本日志（V4.0 → V5.6）
 ├── LICENSE         # MIT
 ├── package.json    # 仅用于 npm start 一键启动本地服务
 └── .gitignore

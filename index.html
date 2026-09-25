@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V5.5</title>
+<title>12306火车票票根编辑器V5.6</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -1714,6 +1714,14 @@ body::after {
   .font-ctrl input[type="range"] { flex: 1 1 auto; width: auto; }
 }
 
+/* V5.6：移动端点击可靠性——夸克/UC 等内核对未声明 touch-action 的可点元素
+   保留双击缩放判定，快速点按可能被吞或延迟。统一声明消除该行为。 */
+button, .btn, .type-toggle, .type-toggle img, .bm-chip, .chip, .dt-chip,
+input[type="range"], input[type="checkbox"], input[type="radio"], select,
+.ep-actions button, .font-ctrl, .batch-nav {
+  touch-action: manipulation;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -2404,8 +2412,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.5</h1>
-        <p>阿杰同学 · V5.5 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.6</h1>
+        <p>阿杰同学 · V5.6 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -3165,18 +3173,35 @@ function init() {
     Q("#save").onclick = function(e){
         // 先同步重绘并等待二维码异步绘制完成，确保下载图片与预览一致
         redraw();
-        setTimeout(function(){
-            var link = document.getElementById('link');
-            link.setAttribute('download', `${V("#trainNo")}_${V("#date")}.png`);
-            link.setAttribute('href', canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
-            link.click();
+        var exportNow = function(){
+            // V5.6：统一走 __saveCanvasImage（blob 下载 + 移动端长按保存兜底），
+            // 修复夸克等移动内核对 data URL/octet-stream 程序化下载静默拦截的问题
+            if(window.__saveCanvasImage){
+                window.__saveCanvasImage(canvas, `${V("#trainNo")}_${V("#date")}.png`);
+            } else {
+                var link = document.getElementById('link');
+                link.setAttribute('download', `${V("#trainNo")}_${V("#date")}.png`);
+                link.setAttribute('href', canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
+                link.click();
+            }
             // 4.6：单张导出（无进度条场景）用轻提示告知结果
             if (window.__exportProgress) window.__exportProgress.toast("导出成功");
-        }, 400);
+        };
+        // 二维码已就绪（缓存命中且 img 解码完成）→ 立即导出；否则沿用 400ms 等待，
+        // 缩短点击到下载的间隔，降低移动端用户激活过期的风险
+        var qrReady = (typeof qrImg !== "undefined") && qrImg.complete
+            && window.__qrCache && window.__qrCache.url && qrImg.src === window.__qrCache.url;
+        if (qrReady) exportNow();
+        else setTimeout(exportNow, 400);
     }
 
 
     Q("#pdfExtract").onclick = function(e){
+        // V5.6：依赖缺失（老内核解析 pdf.js 失败）时给出可见提示，避免「点了没反应」
+        if(!window.extractTicketFromPdf || window.__pdfDepsMissing){
+            alert("PDF 导入组件未能加载，可能是浏览器内核版本较旧。\n请更新浏览器（推荐 Chrome / Edge / 夸克最新版）后重试，或改用手动填写。");
+            return;
+        }
         window.extractTicketFromPdf && window.extractTicketFromPdf();
     };
 
@@ -4138,7 +4163,9 @@ function saveInfo() {
     var payload;
     if(batch && batch.active && batch.items.length){
         // 当前表单可能含有尚未切换行程的实时编辑，先写回当前行程再序列化，保证与界面一致
-        window.__saveFormToTrip(batch.items[batch.index]);
+        // V5.6：PDF 提取管线进行中（__extracting）时表单是「下一份 PDF 的解析中间态」，
+        // 此时写回会把下一份 PDF 的值污染进当前行程副本——跳过写回，行程数据以自身副本为准
+        if(!window.__extracting) window.__saveFormToTrip(batch.items[batch.index]);
         payload = {
             v: 1, active: true,
             index: batch.index,
@@ -4296,6 +4323,9 @@ setTimeout(() => {
 (function(){
     const pdfjs = window.pdfjsLib;
     if(!pdfjs || typeof QRCode === "undefined" || typeof LZString === "undefined"){
+        // V5.6：依赖未加载（多为浏览器内核过旧、pdf.js 新语法解析失败）时置标记，
+        // 「提取并生成」按钮点击后给出可见提示，不再静默无响应
+        window.__pdfDepsMissing = true;
         console.warn("PDF 依赖未加载，跳过 PDF 提取功能");
         return;
     }
@@ -4798,6 +4828,12 @@ window.extractTicketFromPdf = function(){
             batch.items = [];
             batch.index = 0;
             batch.uiIndex = 0;   // 4.5：用户视角的稳定索引（不受封面流扫描影响）
+            // V5.6 修复：提取期间关闭批量态并置 __extracting 标记——
+            // saveInfo（每次 redraw 末尾调用）会把表单写回 batch.items[batch.index]，
+            // 若提取中保持 batch.active，第 2 份及之后的 PDF apply 覆盖表单后，
+            // 任何一次 redraw 都会把「下一份 PDF 的值」污染进「上一份行程」的独立副本。
+            batch.active = false;
+            window.__extracting = true;
             let okCount = 0, failCount = 0;
             for(let i = 0; i < files.length; i++){
                 const file = files[i];
@@ -4845,6 +4881,7 @@ window.extractTicketFromPdf = function(){
             btn.classList.add("btn-extract-highlight");
             setTimeout(function(){ btn.classList.remove("btn-extract-highlight"); }, 6000);
             updateBatchNav();
+            window.__extracting = false;   // V5.6：提取结束，恢复 saveInfo 写回
         };
         run().catch(function(err){
             console.error(err);
@@ -4854,6 +4891,7 @@ window.extractTicketFromPdf = function(){
             statusEl.className = "pdf-status err";
             statusEl.style.display = "block";
             statusEl.textContent = "PDF 解析失败：" + (err && err.message ? err.message : err);   // textContent 防注入
+            window.__extracting = false;   // V5.6：异常路径同样复位标记
         });
     };
 
@@ -4861,6 +4899,9 @@ window.extractTicketFromPdf = function(){
 window.batchGoto = function(delta){
     const batch = window.__batch;
     if(!batch.active || !batch.items.length) return;
+    // V5.6：PDF 提取管线进行中禁止切换——batchGoto 会把表单（可能是下一份 PDF 的
+    // 解析中间态）写回来源行程副本，造成跨行程数据污染；提取完成后自动恢复
+    if(window.__extracting) return;
     const from = batch.index;
     batch.index = (batch.index + delta + batch.items.length) % batch.items.length;
     // V4.9.1：离开当前行程前，把表单（含用户实时编辑）快照写回该行程的独立副本，
@@ -5004,7 +5045,8 @@ window.batchSaveAll = function(){
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+            // V5.6：移动端下载管理器启动较慢，60s 后再回收 blob URL（原 3s 可能中断下载）
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
             // 4.6：全部完成 → 「导出成功」→ 进度遮罩自动收起
             if(P) P.success("导出成功 · 共 " + entries.length + " 张图片");
         }catch(err){
@@ -6410,6 +6452,86 @@ window.__bmMergeBack = function(front){
   return out;
 };
 
+/* ---------- V5.6：统一图片下载助手（移动端兼容） ----------
+   夸克 / UC 等移动内核常静默拦截「data URL + octet-stream + a.click()」的
+   程序化下载。这里改为：toBlob → blob URL → a.download（桌面与移动通用），
+   老内核无 toBlob 时回退原 data URL 行为；触屏环境额外弹出「长按保存」浮层，
+   即使下载被拦截也能通过长按图片存入相册。 */
+window.__isTouchEnv = function(){
+    try{
+        var touch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+        var coarse = window.matchMedia && window.matchMedia("(hover: none), (pointer: coarse)").matches;
+        return touch && coarse;
+    }catch(e){ return false; }
+};
+window.__showHoldToSave = function(dataUrl, filename){
+    var old = document.getElementById("holdSaveMask");
+    if(old) old.parentNode.removeChild(old);
+    var mask = document.createElement("div");
+    mask.id = "holdSaveMask";
+    mask.style.cssText = "position:fixed;inset:0;z-index:4000;background:rgba(7,10,14,0.72);" +
+        "display:flex;align-items:center;justify-content:center;padding:18px;";
+    var card = document.createElement("div");
+    card.style.cssText = "background:#141C25;border:1px solid #3A4B5C;border-radius:12px;" +
+        "max-width:min(88vw,420px);padding:16px;box-shadow:0 20px 52px rgba(0,0,0,0.48);text-align:center;";
+    var tip = document.createElement("div");
+    tip.style.cssText = "font:600 14px/1.6 -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;" +
+        "color:#F6F9FC;margin-bottom:10px;";
+    tip.textContent = "如未自动保存，请长按下方图片，选择「保存图片 / 存入相册」";
+    var img = document.createElement("img");
+    img.src = dataUrl;
+    img.alt = filename || "车票图片";
+    img.style.cssText = "display:block;width:100%;max-height:52vh;object-fit:contain;" +
+        "background:#fff;border-radius:6px;-webkit-touch-callout:default;-webkit-user-select:none;user-select:none;";
+    var name = document.createElement("div");
+    name.style.cssText = "font:12px/1.4 ui-monospace,Menlo,monospace;color:rgba(190,201,213,0.66);" +
+        "margin:8px 0 12px;word-break:break-all;";
+    name.textContent = filename || "";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "完成";
+    btn.style.cssText = "padding:9px 22px;border:0;border-radius:8px;background:#F5A623;" +
+        "color:#1B1305;font:600 14px -apple-system,'PingFang SC',sans-serif;";
+    btn.onclick = function(){ mask.parentNode.removeChild(mask); };
+    card.appendChild(tip); card.appendChild(img); card.appendChild(name); card.appendChild(btn);
+    mask.appendChild(card);
+    document.body.appendChild(mask);
+};
+window.__saveCanvasImage = function(cv, filename){
+    var P = window.__exportProgress;
+    var notify = function(msg){ if(P && P.toast) P.toast(msg); };
+    // 兜底：V5.5 原行为（data URL + octet-stream），供无 toBlob 的老内核使用
+    var legacyDataUrl = function(){
+        var link = document.getElementById("link");
+        link.setAttribute("download", filename);
+        link.setAttribute("href", cv.toDataURL("image/png").replace("image/png", "image/octet-stream"));
+        link.click();
+    };
+    var tryBlob = function(){
+        if(!cv.toBlob){ legacyDataUrl(); notify("已发起下载"); return; }
+        cv.toBlob(function(blob){
+            if(!blob){ legacyDataUrl(); notify("已发起下载"); return; }
+            try{
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                // 移动端下载管理器启动较慢，60s 后再回收 blob URL（原 3s 可能中断下载）
+                setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+                notify("已发起下载");
+                // 触屏环境：下载可能被浏览器拦截，提供长按保存兜底
+                if(window.__isTouchEnv()){
+                    try{ window.__showHoldToSave(cv.toDataURL("image/png"), filename); }catch(e){}
+                }
+            }catch(err){
+                legacyDataUrl();
+                notify("已发起下载");
+            }
+        }, "image/png");
+    };
+    try{ tryBlob(); }catch(err){ try{ legacyDataUrl(); notify("已发起下载"); }catch(e2){} }
+};
+
 /* ---------- 4.5：导出统一入口 ----------
    主界面只有一个「导出图片」按钮：点击后先询问是否制作车票背面；
    「否」时按导出数量分流 —— 1 张走单张下载，>1 张走批量打包（ZIP）。
@@ -6734,6 +6856,8 @@ function bmShowTrip(i){
   }
 }
 function bmDownloadPng(canvas, name){
+  // V5.6：走统一下载助手（blob 优先 + 移动端长按保存兜底）
+  if(window.__saveCanvasImage){ window.__saveCanvasImage(canvas, name); return; }
   var link = $("link");
   link.setAttribute("download", name);
   link.setAttribute("href", canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
@@ -6751,7 +6875,8 @@ function bmDownloadZip(entries){
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  // V5.6：移动端下载管理器启动较慢，60s 后再回收 blob URL（原 3s 可能中断下载）
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
 }
 /* 4.6：分开导出时，第 i 段行程的「背面」独立画布 */
 function bmBackOnly(i){
@@ -7114,6 +7239,14 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V5.6</b><span>2026-09-25</span></div>
+      <ul>
+        <li><b>修复</b> PDF 多份导入跨行程数据污染（严重）：连续导入或一次导入多份 PDF 时，解析第 2 份及之后的 PDF 会把其字段值污染进之前行程的独立副本（如行程 1 的取票机号被写成行程 2 的电子票号），且随分享参数持久化。根因为 saveInfo（每次重绘末尾调用）会把表单写回 batch.items[batch.index]，而提取管线中下一份 PDF 的解析结果已先一步覆盖表单。现提取期间置 __extracting 标记：saveInfo 跳过写回、batchGoto 暂停切换，提取完成后自动恢复，异常路径同样复位。</li>
+        <li><b>修复</b> 移动端（夸克 / UC 等内核）导出图片失败：原「data URL + octet-stream + a.click()」的程序化下载常被静默拦截。新增统一下载助手 __saveCanvasImage——优先 toBlob → blob URL → a.download（桌面与移动通用），无 toBlob 的老内核自动回退原 data URL 行为；触屏环境额外弹出「长按保存」浮层，下载被拦截时也可长按图片存入相册。ZIP 下载的 blob URL 回收由 3 秒延长至 60 秒，避免移动端下载管理器启动慢导致下载中断。</li>
+        <li><b>修复</b> 老内核浏览器「按钮点击无响应」：浏览器内核过旧导致 pdf.js 组件解析失败时，「提取并生成」按钮此前点击后无任何反馈。现在给出明确提示（建议升级浏览器或改手动填写）；同时为按钮、模板切换芯片、滑块等交互元素统一声明 touch-action: manipulation，消除移动内核双击缩放判定造成的点击延迟与吞点击。</li>
+        <li><b>优化</b> 单张导出在二维码已就绪时立即触发下载（原固定等待 400ms），缩短点击到下载间隔，降低移动端用户激活过期的风险；二维码未就绪时仍等待 400ms，确保导出图片与预览一致。</li>
+        <li><b>测试</b> 两份 12306 行程 PDF 端到端验证：字段提取（车次 / 站名 / 拼音 / 日期时间 / 席别 / 车厢座位 / 票价 / 身份证 / 姓名 / 检票口 / 电子票号 25 位完整 / 订单号映射）全部正确；多行程生成、切换与数据隔离通过；批量导出 ZIP、单张导出、背面制作导出、六款底图渲染、细节调整与持久化回归通过；窄屏（554px 触屏媒体查询）布局与点击验证通过；全部 19 个脚本块语法检查零错误。</li>
+      </ul>
       <div class="cl-ver"><b>V5.5</b><span>2026-09-24</span></div>
       <ul>
         <li><b>新增</b> 多行程同步渲染：细节调整完成后关闭悬浮窗时，自动将调整同步到其他所有行程并立即重新渲染——受影响行程的封面缩略图自动标记过期并重扫；缩略图区域未展开时仅标记过期，展开后自动补扫；重置模块 / 重置全部同样触发同步。</li>
