@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V5.9</title>
+<title>12306火车票票根编辑器V6.0</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -15,7 +15,7 @@
      · 图标：全套 24 网格线性 SVG（1.8 描边、圆角接头），杜绝 emoji
      · 主按钮：实色琥珀 + 「印刷硬投影」，按下时投影收缩，模拟盖章手感
    布局（保持不变）：左侧 65% / 右侧 35%
-        左侧：图片预览 80% + （PDF 导入 50% | 一键清除 50%）20%
+        左侧：图片预览 80% + （PDF 导入 50% | 纸质票扫描识别 50%）20%
         右侧：行程信息 + 乘客信息（内容自适应）
    性能铁律（沿用并强化）：全站禁用 backdrop-filter 实时模糊；
    背景渐变一律静态（不做动画）；聚光层用固定尺寸圆 + transform 位移。
@@ -394,7 +394,7 @@ body::after {
 }
 .row-bottom {
   display: grid;
-  grid-template-columns: 1fr 1fr;   /* PDF 导入 与 一键清除 平分剩余空间 */
+  grid-template-columns: 1fr 1fr;   /* PDF 导入 与 纸质票扫描识别 平分剩余空间 */
   gap: 14px;
   min-height: 0;
 }
@@ -1177,7 +1177,7 @@ body::after {
 .preview-tip a:hover { opacity: 0.75; text-decoration: underline; }
 
 /* ==========================================================================
-   左下：PDF 导入 / 一键清除（共用一行，各占 50%）
+   左下：PDF 导入 / 纸质票扫描识别（共用一行，各占 50%）
    ========================================================================== */
 .row-bottom > .card {
   display: flex;
@@ -1375,21 +1375,26 @@ body::after {
 }
 
 /* 一键清除 */
-.card-pdfclear { justify-content: flex-start; }
-.clear-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  justify-content: center;
-}
 .btn-clear { position: relative; overflow: hidden; }
 .btn-clear.done { animation: pulseHighlight 0.7s var(--ease-io) 2; }
-.card-pdfclear .card-header { margin-bottom: 6px; }
-.card-pdfclear .btn-clear { height: 26px; font-size: 12px; }
 
-/* ---------- 基础信息整理：常用乘客列表 ---------- */
+/* ---------- 乘客与备注：常用乘客区块（V6.0 由原「基础信息整理」模块整合而来） ---------- */
+.passenger-block {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.passenger-block-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.72;
+  letter-spacing: 0.5px;
+}
+
 .passenger-row {
   display: flex;
   align-items: center;
@@ -2414,12 +2419,14 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V5.9</h1>
-        <p>阿杰同学 · V5.9 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.0</h1>
+        <p>阿杰同学 · V6.0 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
       <span class="live-pill" id="livePill"><i></i><span id="livePillText">已就绪</span></span>
+      <!-- V6.0：一键清除（原左下「基础信息整理」卡片内按钮迁至顶栏，与日志更新并排） -->
+      <button class="chg-btn" id="pdfClear" type="button" title="一键清除所有填写内容" aria-label="一键清除所有填写内容"><svg class="ic" aria-hidden="true"><use href="#i-broom"/></svg></button>
       <button class="chg-btn" id="changelogBtn" type="button" title="更新日志" aria-label="查看更新日志" aria-haspopup="dialog"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
       <button class="theme-toggle" id="themeToggle" type="button" title="切换白天 / 黑夜" aria-label="切换白天或黑夜主题" data-page-node-id="nPsioIc1IeXYcsV7WRVrk3"><svg class="ic tt-moon" aria-hidden="true"><use href="#i-moon"/></svg><svg class="ic tt-sun" aria-hidden="true"><use href="#i-sun"/></svg></button>
     </div>
@@ -2492,7 +2499,7 @@ window.__exportProgress = (function(){
         <div class="preview-tip" data-page-node-id="7qWDRaEnGOPGHqaAC6hnug">编辑右侧表单后车票实时刷新 · <a href="#cardJourney" id="toForm" data-page-node-id="JSlkvfoUdYxw25FZb2bU72">跳转到表单</a></div>
       </div>
 
-      <!-- 底部剩余 20%：PDF 导入 与 一键清除 平分 -->
+      <!-- 底部剩余 20%：PDF 导入 与 纸质票扫描识别 平分 -->
       <div class="row-bottom">
 
         <!-- PDF 导入 -->
@@ -2525,24 +2532,43 @@ window.__exportProgress = (function(){
           <div class="pdf-status" id="pdfStatus"></div>
         </div>
 
-        <!-- 基础信息整理 -->
-        <div class="card card-pdfclear" data-page-node-id="UmtD3FqF7MFrbD5aBv9IF2">
-          <div class="card-header" data-page-node-id="wvpFOBEJkgqwS2Ccmw3EkC">
-            <div class="icon" data-page-node-id="a6xBo0v9ERFZqV9ZOUDPBX"><svg class="ic" aria-hidden="true"><use href="#i-broom"/></svg></div>
+        <!-- V6.0：纸质票扫描识别（OCR）—— 本地识别引擎，照片不出设备 -->
+        <div class="card card-ocr" id="cardOcr">
+          <div class="card-header">
+            <div class="icon"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg></div>
             <span class="sec-no">03</span>
-            <h2 data-page-node-id="kD10aWEjqb9ihhRE2UkvQ4">基础信息整理</h2>
-          </div>
-          <div class="clear-body">
-            <div class="passenger-row">
-              <select id="passengerList" title="常用乘客列表"></select>
-              <button class="btn btn-mini" id="passengerFill" type="button" title="将选中乘客的姓名、证件号填入表单"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>填入</button>
+            <h2>纸质票扫描识别</h2>
+            <div class="header-meta">
+              <select id="ocrEngineSel" class="ocr-engine-sel" title="识别引擎：高精度 = PP-OCRv5 深度学习模型（PaddleOCR，首次联网下载约 16MB 后可离线）；轻量 = Tesseract（约 25MB）">
+                <option value="paddle">高精度引擎</option>
+                <option value="tesseract">轻量引擎</option>
+              </select>
+              <span class="ocr-engine-chip" id="ocrEngineChip" hidden></span>
             </div>
-            <div class="passenger-row">
-              <button class="btn btn-mini" id="passengerSave" type="button" title="把当前姓名和证件号存为常用乘客"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>存为乘客</button>
-              <button class="btn btn-mini btn-mini-danger" id="passengerDel" type="button" title="删除选中的常用乘客"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>删除</button>
-            </div>
-            <button class="btn-clear" id="pdfClear" data-page-node-id="oIwwbYa3Xm9M9JKcVZFK8d">一键清除所有填写内容</button>
           </div>
+          <input type="file" id="ocrFile" accept="image/*" multiple class="ocr-input">
+          <div class="ocr-flex">
+            <div class="ocr-zone" id="ocrZone" tabindex="0" role="button" aria-label="选择或拖入纸质火车票照片">
+              <div class="pdf-icon"><svg class="ic ic-lg" aria-hidden="true"><use href="#i-image"/></svg></div>
+              <div class="pdf-hint">点击 / 拖入 <strong>纸质火车票照片</strong>（支持多选，手机可直接拍摄）</div>
+              <!-- 识别进度为拖放区内覆盖层（与 PDF 模块一致），不占布局空间 -->
+              <div class="pdf-progress" id="ocrProgress" hidden>
+                <div class="pdf-progress-bar"><span id="ocrProgressFill"></span></div>
+                <div class="pdf-progress-text" id="ocrProgressText">识别中…</div>
+              </div>
+            </div>
+            <div class="ocr-btns">
+              <button class="btn btn-add" id="ocrAdd" type="button" title="继续添加票据照片（可多选追加）"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>添加</button>
+              <button class="btn-run btn-extract" id="ocrRun" disabled>开始识别</button>
+            </div>
+          </div>
+          <div class="ocr-list" id="ocrList" hidden></div>
+          <div class="ocr-actions-bar" id="ocrActions" hidden>
+            <button class="btn btn-mini" id="ocrApplyAll" type="button" title="按顺序把全部已识别票据各生成一条行程"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>全部生成行程</button>
+            <button class="btn btn-mini" id="ocrExport" type="button" title="把已确认（已生成行程）的识别结果导出为 CSV 文件"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>导出CSV</button>
+            <button class="btn btn-mini" id="ocrClear" type="button" title="清空全部照片与识别结果"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>清空</button>
+          </div>
+          <div class="pdf-status" id="ocrStatus"></div>
         </div>
 
       </div>
@@ -2672,6 +2698,19 @@ window.__exportProgress = (function(){
             <div class="form-group wide" data-page-node-id="OWtPtKlKui5FyLK6fwjIDZ">
               <label data-page-node-id="ODi5FcdyZQwphRWs0eQUKr">二维码内容</label>
               <input id="qrcodeString" value="https://www.12306.cn/" placeholder="请输入二维码内容" data-page-node-id="UzuP4tryFZrcM30Py9Fcq6">
+            </div>
+          </div>
+
+          <!-- V6.0：常用乘客（由原「基础信息整理」模块整合而来，填写目标即上方身份证/姓名字段） -->
+          <div class="passenger-block">
+            <div class="passenger-block-title">常用乘客</div>
+            <div class="passenger-row">
+              <select id="passengerList" title="常用乘客列表"></select>
+              <button class="btn btn-mini" id="passengerFill" type="button" title="将选中乘客的姓名、证件号填入表单"><svg class="ic" aria-hidden="true"><use href="#i-enter"/></svg>填入</button>
+            </div>
+            <div class="passenger-row">
+              <button class="btn btn-mini" id="passengerSave" type="button" title="把当前姓名和证件号存为常用乘客"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>存为乘客</button>
+              <button class="btn btn-mini btn-mini-danger" id="passengerDel" type="button" title="删除选中的常用乘客"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>删除</button>
             </div>
           </div>
         </div>
@@ -4923,6 +4962,8 @@ function updateBatchNav(){
     }
 }
 
+window.updateBatchNav = updateBatchNav;    // V6.0：暴露给 OCR 模块跨块调用（本 IIFE 内函数默认不挂 window）
+
 // 应用某个行程到表单（V4.9.1：数据来自行程自身独立副本，无条件覆盖表单；
 // 不触发 URL 分享参数写入，字段来源标记也不受影响）
 function applyParsed(trip){
@@ -5287,8 +5328,13 @@ window.batchSaveAll = function(){
     try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
     if(window.batchExit) window.batchExit();
     if(typeof redraw === "function") redraw();
-    clearBtn.textContent = "已清除";
-    setTimeout(function(){ clearBtn.textContent = "一键清除所有填写内容"; }, 1200);
+    // V6.0：按钮改为顶栏图标芯片，用高亮态反馈替代文案切换
+    clearBtn.classList.add("done");
+    clearBtn.title = "已清除";
+    setTimeout(function(){
+      clearBtn.classList.remove("done");
+      clearBtn.title = "一键清除所有填写内容";
+    }, 1200);
   });
 
   // 批量导航：预览区左右按钮 + 键盘 ←/→
@@ -5801,7 +5847,7 @@ window.batchSaveAll = function(){
 
   /* 5.1 点击涟漪 */
   document.addEventListener("pointerdown", (e) => {
-    const el = e.target.closest(".btn, .btn-extract, .btn-clear, .batch-nav, .checkbox-item, .type-toggle img");
+    const el = e.target.closest(".btn, .btn-extract, .btn-clear, .chg-btn, .batch-nav, .checkbox-item, .type-toggle img");
     if (!el) return;
     const r = el.getBoundingClientRect();
     const d = Math.max(r.width, r.height) * 2.2;
@@ -7155,6 +7201,8 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 .chg-btn:active{ transform: translateY(0) scale(.96); }
 .chg-btn .ic{ width:18px; height:18px; }
 .chg-btn:focus-visible{ outline:none; box-shadow: 0 0 0 3px var(--accent-glow, rgba(245,166,35,.25)); }
+/* V6.0：一键清除按钮（顶栏芯片）清除成功后的高亮反馈 */
+.chg-btn.done{ color: var(--success); border-color: var(--success); }
 .cl-mask{
   position: fixed; inset: 0; z-index: 3900;
   display:flex; align-items:center; justify-content:center; padding:24px;
@@ -7379,6 +7427,217 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   .dt-left{ flex:none; min-height:300px; }
   .dt-right{ flex:1 1 auto; border-left:none; border-top:1px solid var(--hairline, rgba(255,255,255,.1)); }
 }
+
+/* ==========================================================================
+   V6.0 · 纸质票扫描识别（OCR）模块
+   视觉语言与「PDF 行程导入」保持一致：区域类名独立（.ocr-*），
+   进度条 / 状态条复用 .pdf-progress / .pdf-status 全局样式
+   ========================================================================== */
+.card-ocr .ocr-flex {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+}
+.ocr-input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.card-ocr .ocr-btns {
+  flex: 1 1 0;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+/* 两个按钮在 OCR 模块内与左侧长矩形等高，并各占一半高度（与 PDF 模块一致） */
+.card-ocr .ocr-btns .btn-add,
+.card-ocr .btn-run {
+  flex: 1 1 0;
+  align-self: stretch;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  margin-top: 0;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.card-ocr .btn-run[disabled] { opacity: .55; cursor: not-allowed; }
+.card-ocr .ocr-zone {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+  padding: 9px 11px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--field-bg);
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast), transform var(--dur-fast) var(--spring), box-shadow var(--dur-fast);
+  overflow: hidden;
+  outline: none;
+}
+.card-ocr .ocr-zone:focus-visible {
+  border-color: var(--accent);
+  border-style: solid;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.card-ocr .ocr-zone:hover,
+.card-ocr .ocr-zone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+.card-ocr .ocr-zone:active { transform: scale(0.985); }
+.ocr-zone .pdf-icon {
+  position: relative;
+  z-index: 2;
+  width: 30px; height: 30px;
+  transition: transform .3s var(--spring), color .2s;
+  color: var(--text-dim);
+}
+.ocr-zone:hover .pdf-icon { transform: translateY(-3px) scale(1.12); color: var(--accent-text); }
+.ocr-zone .pdf-hint { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); position: relative; z-index: 2; }
+.ocr-zone .pdf-hint strong { color: var(--accent-text); font-weight: 650; }
+.card-ocr .pdf-progress {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--surface, #1A232E);
+  border: 1px solid var(--border, #28343F);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+}
+.card-ocr .pdf-status { margin-top: 8px; }
+/* 引擎状态小徽标（标题行右侧） */
+.ocr-engine-chip {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  letter-spacing: .05em;
+  color: var(--text-dim);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+.ocr-engine-chip.ok { color: var(--success); border-color: rgba(70,193,120,.45); }
+/* V6.0：OCR 引擎选择下拉（卡片标题行内小尺寸，样式与常用乘客下拉同语言） */
+.ocr-engine-sel {
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--text);
+  font-size: 11.5px;
+  font-family: var(--font);
+  outline: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ocr-engine-sel:focus-visible { border-color: var(--border-focus, #F5A623); }
+/* 识别结果列表 */
+.card-ocr .ocr-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 460px;
+  overflow: auto;
+}
+.ocr-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface2);
+  animation: riseIn .35s var(--ease-out) both;
+}
+.ocr-item.done { border-color: rgba(70,193,120,.45); }
+.ocr-item.err  { border-color: rgba(242,89,94,.45); }
+.ocr-thumb {
+  width: 112px; height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: #fff;
+  flex: none;
+  align-self: flex-start;
+}
+.ocr-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ocr-item-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ocr-fname {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text);
+  max-width: 36%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ocr-chip {
+  font-size: 10.5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.ocr-chip.busy { color: var(--accent-text); border-color: var(--accent); }
+.ocr-chip.ok   { color: var(--success); border-color: rgba(70,193,120,.45); background: var(--success-tint); }
+.ocr-chip.err  { color: var(--danger);  border-color: rgba(242,89,94,.45);  background: var(--danger-tint); }
+.ocr-spacer { flex: 1 1 auto; }
+.ocr-mini {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 11px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.ocr-mini[disabled] { opacity: .55; cursor: not-allowed; }
+.ocr-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+  gap: 5px 8px;
+}
+.ocr-f { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ocr-f span { font-size: 10px; color: var(--text-dim); letter-spacing: .04em; }
+.ocr-f input, .ocr-f select {
+  height: 24px;
+  font-size: 11.5px;
+  padding: 0 6px;
+  border-radius: 7px;
+  border: 1px solid var(--hairline);
+  background: var(--field-bg);
+  color: var(--text);
+  min-width: 0;
+  width: 100%;
+}
+.ocr-f input:focus, .ocr-f select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.ocr-actions-bar { display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
+@media (max-width: 640px){
+  .card-ocr .ocr-flex { flex-direction: column; }
+  .card-ocr .ocr-btns { width: auto; flex-direction: row; }
+  .card-ocr .ocr-btns .btn-add,
+  .card-ocr .btn-run { height: 34px; min-height: 34px; }
+  .ocr-thumb { width: 84px; height: 58px; }
+  .ocr-fname { max-width: 100%; }
+  .card-ocr .ocr-list { max-height: none; }
+}
 </style>
 <div class="cl-mask" id="clMask" role="presentation" hidden>
   <div class="cl-card" role="dialog" aria-modal="true" aria-labelledby="clTitle">
@@ -7388,6 +7647,18 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.0</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>新增</b> 「纸质票拍照识别（OCR）」功能模块（PDF 导入卡片下方新卡片）：拍摄或选择纸质火车票照片，自动在本地识别票面文字并回填——车次、出发/到达站、乘车日期、开车时间、车厢座位、席别、票价、姓名、证件号（打码）、检票口、红字票号与底部电子票号等字段一键入表。</li>
+        <li><b>新增</b> 本地 OCR 双引擎：默认<b>高精度引擎 PP-OCRv5</b>（PaddleOCR 官方浏览器 SDK，ONNX Runtime Web 推理），卡片标题行可切换<b>轻量引擎 Tesseract.js</b> 作回退；引擎与语言模型按需从 CDN 懒加载（模型缓存于浏览器 IndexedDB，之后可离线使用），识别计算全部在本地浏览器完成，不上传任何图片与数据，延续单文件零上传的核心设计；不支持 WebAssembly 的老内核给出升级提示。</li>
+        <li><b>新增</b> 票面智能裁剪与照片方向探测：自动从深色背景中检测票面区域（Otsu 阈值 + 行列投影），识别分辨率全部让给票面；竖拍横票按票面宽高比引导判向（0°/90°/180°/270° 探测取最优），1900px 高分辨率识别；灰度化 + 分位对比度拉伸提升低质量照片识别率。</li>
+        <li><b>新增</b> 站名智能解析：利用内置全国站名库按拼音反查（精确匹配优先，编辑距离 ≤2 模糊兜底），兼容「XX站」后缀写法；车次字母白名单与票号字母天然错开，避免票号干扰误判。</li>
+        <li><b>新增</b> 批量处理：一次选择多张票据照片逐张排队识别，进度条实时显示；每张识别结果以条目卡片展示，可逐字段手动修正（识别结果与修正值随时可改，修正后才生成行程），支持单张重新识别、单张应用与全部应用。</li>
+        <li><b>新增</b> CSV 数据导出：已确认的票据信息一键导出为 CSV 文件（UTF-8 BOM，Excel 直接打开不乱码），含序号、车站、车次、日期时间、车厢座位、席别、票价、姓名证件、检票口、双票号、置信度与来源图片名等 17 列。</li>
+        <li><b>优化</b> 界面布局重构：「一键清除所有填写的数据」按钮由左下卡片迁至<b>顶栏（「日志更新」按钮旁）</b>，与顶栏图标芯片视觉统一，清除成功以高亮反馈提示；「存放常用旅客」模块整合并入<b>「乘客与备注信息栏」</b>（常用乘客区块，填入/存为/删除一应俱全），原独立卡片移除，版面更紧凑。</li>
+        <li><b>修复</b> 全展开布局异常：底部卡片区在多卡片并排时换行挤压、元素重叠与显示不全的问题已修复（卡片区回归两列平衡布局）；全页面自适应优化，桌面 / 平板 / 手机（390px 级窄屏起）各断点均无横向溢出。</li>
+        <li><b>说明</b> 识别结果自动按「短串→顶部红字票号、长串→底部电子票号」规则与 PDF 导入一致写入；应用行程复用现有多行程管线，识别生成与手动切换、分享持久化、细节调整等能力完全兼容。</li>
+      </ul>
       <div class="cl-ver"><b>V5.9</b><span>2026-09-25</span></div>
       <ul>
         <li><b>修复</b> 导出图片缺二维码 / 跨行程旧码：V5.6 的「二维码就绪立即导出」与重绘的二维码 100ms 延时回贴存在竞态——图片元素就绪不代表画布已绘制，导出时抓到的是重绘后二维码尚未回贴的画布（实测导出图二维码区域纯空白）。移动端用户「填完即导出」的操作节奏高频命中，所有浏览器（含桌面端）均受影响。现导出统一改为条件等待：二维码图片就绪（src 与缓存一致且解码可用）且画布完成回贴（打标 <b>__qrPainted</b>）后才抓取画布，80ms 轮询、3 秒超时兜底。</li>
@@ -8070,6 +8341,1181 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     e.preventDefault();
     apply(selKey, function(a){ a.dx += d[0] * step; a.dy += d[1] * step; });
   });
+})();
+</script>
+
+<script>
+/* ==========================================================================
+   V6.0 · 纸质票扫描识别（OCR）模块
+   --------------------------------------------------------------------------
+   - 本地识别：Tesseract.js（LSTM / WASM）在浏览器内完成全部计算，照片与识别
+     结果不出设备，不改变「数据不出浏览器」的核心设计；引擎脚本与中英文语言
+     模型首次使用时从 CDN 下载（约 5MB），语言模型自动缓存 IndexedDB，之后
+     可离线识别。
+   - 流程：多图导入 → 方向探测（0/90/180/270°，竖拍横票自动转正）→ 预处理
+     （灰度 + 2%~98% 对比度拉伸）→ 识别 → 字段解析（拼音反查站名库）→
+     人工修正 → 生成行程（复用 __makeTrip 行程快照管线）→ 导出 CSV。
+   - 写入规则与 PDF 导入一致：顶部红字短票号 → #ticketNo，底部黑字长串 →
+     #ticketMachineId；生成行程期间置 __extracting 互斥，防止 saveInfo 污染。
+   - 兼容性：本块不用 ?. ?? ||= #field 与后行断言，老内核可解析；无
+     WebAssembly 时点击「开始识别」给出升级提示。
+   - 调试钩子：window.__ocrParse(text)（纯文本解析断言，无需图片）、
+     window.__ocrItems（结果数组）、window.__ocrBuildCsv()（CSV 文本）、
+     window.__ocrState()（运行状态）、window.__ocrAddFiles(files)、
+     window.__ocrApplyItem(item)。
+   ========================================================================== */
+(function(){
+"use strict";
+if(!document.getElementById("cardOcr")) return;
+
+const OCR_LANGS = "chi_sim+eng";
+const LIB_URLS = [
+    "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",
+    "https://fastly.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",
+    "https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js"
+];
+const WORKER_URLS = [
+    "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
+    "https://fastly.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
+    "https://unpkg.com/tesseract.js@5.1.1/dist/worker.min.js"
+];
+const CORE_URLS = [
+    "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.0",
+    "https://fastly.jsdelivr.net/npm/tesseract.js-core@5.1.0",
+    "https://unpkg.com/tesseract.js-core@5.1.0"
+];
+const LANG_URLS = [
+    "https://tessdata.projectnaptha.com/4.0.0_best",     // 高精度中文模型（首次约 25MB，IndexedDB 缓存后离线）
+    "https://tessdata.projectnaptha.com/4.0.0_fast"      // 备用：轻量模型（主源不可用时降级）
+];
+
+const items = [];            // {file,name,status,rotDeg,conf,text,parsed,confirmed,edited,el,chip,fieldsEl,thumbUrl}
+let running = false;
+let workerPromise = null;
+let libBase = -1;
+
+const $ = function(id){ return document.getElementById(id); };
+const zone = $("ocrZone"), fileInput = $("ocrFile"), listEl = $("ocrList"),
+    runBtn = $("ocrRun"), addBtn = $("ocrAdd"), statusEl = $("ocrStatus"),
+    progressEl = $("ocrProgress"), progressFill = $("ocrProgressFill"),
+    progressText = $("ocrProgressText"), actionsEl = $("ocrActions"),
+    engineChip = $("ocrEngineChip"),
+    engineSel = $("ocrEngineSel");
+
+/* V6.0：引擎选择持久化，默认高精度（PP-OCRv5） */
+if(engineSel){
+    engineSel.value = (function(){
+        try{ return localStorage.getItem("__ocrEngine") === "tesseract" ? "tesseract" : "paddle"; }
+        catch(e){ return "paddle"; }
+    })();
+    engineSel.addEventListener("change", function(){
+        try{ localStorage.setItem("__ocrEngine", engineSel.value); }catch(e){}
+        showStatus("", engineSel.value === "paddle"
+            ? "已切换为高精度引擎（PP-OCRv5）：中文识别更准，首次使用需联网下载约 16MB 模型，之后可离线"
+            : "已切换为轻量引擎（Tesseract）：模型约 25MB，速度与精度均衡");
+    });
+}
+
+function showStatus(cls, msg){
+    statusEl.className = "pdf-status" + (cls ? " " + cls : "");
+    statusEl.style.display = msg ? "block" : "none";
+    statusEl.textContent = msg || "";
+}
+
+/* ---------------- 引擎加载（CDN 多源回退 + IndexedDB 缓存） ---------------- */
+function loadScript(url){
+    return new Promise(function(resolve, reject){
+        const s = document.createElement("script");
+        s.src = url;
+        s.onload = function(){ resolve(); };
+        s.onerror = function(){
+            if(s.parentNode) s.parentNode.removeChild(s);
+            reject(new Error("脚本加载失败"));
+        };
+        document.head.appendChild(s);
+    });
+}
+async function loadLib(){
+    if(window.Tesseract) return;
+    for(let i = 0; i < LIB_URLS.length; i++){
+        try{
+            await loadScript(LIB_URLS[i]);
+            if(window.Tesseract){ libBase = i; return; }
+        }catch(e){ /* 尝试下一个 CDN */ }
+    }
+    throw new Error("引擎脚本下载失败（首次使用需联网），请检查网络后重试");
+}
+async function getWorker(onPhase){
+    if(workerPromise) return workerPromise;
+    workerPromise = (async function(){
+        if(onPhase) onPhase("正在加载本地识别引擎…（首次约 25MB，完成后可离线使用）");
+        // 语言模型版本迁移：缓存键不含模型版本，升级模型后需清一次旧缓存，否则永远命中旧数据
+        try{
+            const LANG_VER = "best1";
+            if(localStorage.getItem("__ocrLangVer") !== LANG_VER){
+                ["tesseract.js-cache", "tesseract-cache", "/tesseract/tessdata", "tesseract.js"].forEach(function(n){
+                    try{ indexedDB.deleteDatabase(n); }catch(e){}
+                });
+                localStorage.setItem("__ocrLangVer", LANG_VER);
+            }
+        }catch(e){ /* 隐私模式等场景忽略 */ }
+        await loadLib();
+        const b = libBase >= 0 ? libBase : 0;
+        let worker = null, lastErr = null;
+        for(let i = 0; i < LANG_URLS.length && !worker; i++){
+            try{
+                worker = await Tesseract.createWorker(OCR_LANGS, 1, {
+                    workerPath: WORKER_URLS[b],
+                    corePath: CORE_URLS[b],
+                    langPath: LANG_URLS[i],
+                    cacheMethod: "write",      // 语言模型写入 IndexedDB，之后离线可用
+                    gzip: true
+                });
+            }catch(err){
+                lastErr = err;                 // 换下一个语言模型源重试
+            }
+        }
+        if(!worker) throw lastErr || new Error("识别引擎初始化失败");
+        if(engineChip){
+            engineChip.hidden = false;
+            engineChip.textContent = "本地OCR就绪";
+            engineChip.classList.add("ok");
+        }
+        return worker;
+    })();
+    workerPromise.catch(function(err){
+        console.error("[OCR] 引擎加载失败", err);
+        workerPromise = null;              // 失败后允许重试
+    });
+    return workerPromise;
+}
+
+/* ---------------- V6.0 引擎抽象层：PP-OCRv5（高精度，PaddleOCR 官方 ONNX）+ Tesseract（轻量，回退） ----------------
+   - 引擎选择持久化 localStorage.__ocrEngine（默认 paddle）
+   - PP-OCRv5 官方 ONNX 模型经 IndexedDB 缓存（key=下载URL），以 blob URL 交给 SDK，二次使用全程离线
+   - 动态 import 经 new Function 间接调用：不支持 import() 的老内核不会拖垮整个脚本块的解析
+   - PP-OCRv5 加载失败（无网/CDN 不可达等）自动回退 Tesseract，保证功能永远可用 */
+var PADDLE_MOD_URLS = [
+    "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm",
+    "https://fastly.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm"
+];
+var PADDLE_DET_URL = "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar";
+var PADDLE_REC_URL = "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar";
+var paddleCache = { mod: null, inst: null, loading: null };
+
+function getOcrEnginePref(){
+    try{ return localStorage.getItem("__ocrEngine") === "tesseract" ? "tesseract" : "paddle"; }
+    catch(e){ return "paddle"; }
+}
+function dynImport(u){
+    try{ var f = new Function("u", "return import(u);"); return f(u); }
+    catch(e){ return Promise.reject(e); }
+}
+function idbOcr(){
+    if(idbOcr.p) return idbOcr.p;
+    idbOcr.p = new Promise(function(resolve, reject){
+        var rq = indexedDB.open("ttOcrModels", 1);
+        rq.onupgradeneeded = function(){ rq.result.createObjectStore("kv"); };
+        rq.onsuccess = function(){ resolve(rq.result); };
+        rq.onerror = function(){ reject(rq.error || new Error("IndexedDB 打开失败")); };
+    });
+    return idbOcr.p;
+}
+function idbOcrGet(key){
+    return idbOcr().then(function(db){
+        return new Promise(function(resolve, reject){
+            var rq = db.transaction("kv", "readonly").objectStore("kv").get(key);
+            rq.onsuccess = function(){ resolve(rq.result); };
+            rq.onerror = function(){ reject(rq.error); };
+        });
+    });
+}
+function idbOcrSet(key, val){
+    return idbOcr().then(function(db){
+        return new Promise(function(resolve, reject){
+            var tx = db.transaction("kv", "readwrite");
+            tx.objectStore("kv").put(val, key);
+            tx.oncomplete = function(){ resolve(); };
+            tx.onerror = function(){ reject(tx.error); };
+        });
+    });
+}
+function fetchWithProgress(url, onPhase){
+    return fetch(url).then(function(res){
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        var total = +res.headers.get("Content-Length") || 0;
+        if(!res.body || !res.body.getReader) return res.arrayBuffer();
+        var reader = res.body.getReader(), chunks = [], got = 0;
+        function fmt(n){ return (n / 1048576).toFixed(1) + "MB"; }
+        function pump(){
+            return reader.read().then(function(r){
+                if(r.done) return;
+                chunks.push(r.value); got += r.value.length;
+                if(onPhase) onPhase("模型下载 " + fmt(got) + (total ? " / " + fmt(total) : "") + "…");
+                return pump();
+            });
+        }
+        return pump().then(function(){
+            var out = new Uint8Array(got), o = 0;
+            chunks.forEach(function(c){ out.set(c, o); o += c.length; });
+            return out.buffer;
+        });
+    });
+}
+function cachedPaddleTar(url, onPhase){
+    return idbOcrGet("tar:" + url).then(function(hit){
+        if(hit){
+            if(onPhase) onPhase("模型已缓存，本地加载…");
+            return hit;
+        }
+        return fetchWithProgress(url, onPhase).then(function(buf){
+            return idbOcrSet("tar:" + url, buf).catch(function(){}).then(function(){ return buf; });
+        });
+    });
+}
+async function ensurePaddle(onPhase){
+    if(paddleCache.inst) return paddleCache.inst;
+    if(paddleCache.loading) return paddleCache.loading;
+    paddleCache.loading = (async function(){
+        if(!paddleCache.mod){
+            var mod = null, lastErr = null;
+            for(var i = 0; i < PADDLE_MOD_URLS.length && !mod; i++){
+                try{ mod = await dynImport(PADDLE_MOD_URLS[i]); }
+                catch(err){ lastErr = err; }
+            }
+            if(!mod) throw lastErr || new Error("引擎库加载失败");
+            paddleCache.mod = mod;
+        }
+        if(onPhase) onPhase("准备高精度模型（首次约 16MB，之后离线可用）…");
+        var detBuf = null, recBuf = null;
+        try{
+            detBuf = await cachedPaddleTar(PADDLE_DET_URL, onPhase);
+            recBuf = await cachedPaddleTar(PADDLE_REC_URL, onPhase);
+        }catch(e){ detBuf = null; /* 自建缓存失败走 SDK 默认下载 */ }
+        var opts;
+        if(detBuf && recBuf){
+            opts = {
+                textDetectionModelName: "PP-OCRv5_mobile_det",
+                textDetectionModelAsset: { url: URL.createObjectURL(new Blob([detBuf], { type: "application/x-tar" })) },
+                textRecognitionModelName: "PP-OCRv5_mobile_rec",
+                textRecognitionModelAsset: { url: URL.createObjectURL(new Blob([recBuf], { type: "application/x-tar" })) },
+                ortOptions: { backend: "wasm" }
+            };
+        }else{
+            opts = { lang: "ch", ocrVersion: "PP-OCRv5", ortOptions: { backend: "wasm" } };
+        }
+        try{
+            return await paddleCache.mod.PaddleOCR.create(opts);
+        }catch(err){
+            if(opts.textDetectionModelAsset){
+                console.warn("[OCR] 自定义模型资产初始化失败，改走 SDK 默认下载", err);
+                return await paddleCache.mod.PaddleOCR.create({ lang: "ch", ocrVersion: "PP-OCRv5", ortOptions: { backend: "wasm" } });
+            }
+            throw err;
+        }
+    })();
+    paddleCache.loading.then(function(inst){
+        paddleCache.inst = inst;
+    }, function(err){
+        console.error("[OCR] PP-OCRv5 引擎加载失败", err);
+        paddleCache.loading = null;        // 失败后允许重试
+    });
+    return paddleCache.loading;
+}
+/* PP-OCRv5 检出框 → 仿 Tesseract 纯文本（y 中心行聚类 + 行内 x 排序），复用既有解析管线 */
+function paddleItemsToText(its){
+    var arr = [];
+    for(var i = 0; i < its.length; i++){
+        var m = its[i]; if(!m || !m.text) continue;
+        var poly = m.poly || [], xs = [], ys = [];
+        for(var j = 0; j < poly.length; j++){
+            var p = poly[j];
+            xs.push(p.x != null ? p.x : p[0]);
+            ys.push(p.y != null ? p.y : p[1]);
+        }
+        if(!xs.length) continue;
+        var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+        arr.push({ text: String(m.text), score: m.score || 0, x0: Math.min.apply(null, xs), yc: (y0 + y1) / 2, h: Math.max(1, y1 - y0) });
+    }
+    arr.sort(function(a, b){ return a.yc - b.yc; });
+    var lines = [], cur = null;
+    for(var k = 0; k < arr.length; k++){
+        var m2 = arr[k];
+        if(!cur || Math.abs(m2.yc - cur.yc) > Math.max(m2.h, cur.h) * 0.62){
+            cur = { yc: m2.yc, h: m2.h, parts: [m2] };
+            lines.push(cur);
+        }else{
+            cur.parts.push(m2);
+            cur.h = Math.max(cur.h, m2.h);
+        }
+    }
+    return lines.map(function(ln){
+        return ln.parts.sort(function(a, b){ return a.x0 - b.x0; }).map(function(m){ return m.text; }).join(" ");
+    }).join("\n");
+}
+function paddleEngine(inst){
+    return {
+        name: "PP-OCRv5",
+        pre: function(cv){ return cv; },   // PP 模型面向自然图像训练，跳过 Sauvola 二值化
+        recognize: async function(cv){
+            const r = await inst.predict(cv);
+            const res = r && r[0];
+            const its = (res && res.items) || [];
+            const text = paddleItemsToText(its);
+            let conf = 0;
+            if(its.length){
+                let s = 0;
+                for(const m of its) s += (m.score || 0);
+                conf = Math.round(s / its.length * 100);
+            }
+            return { data: { text: text, confidence: conf } };
+        }
+    };
+}
+function tesseractEngine(worker){
+    return {
+        name: "Tesseract",
+        pre: function(cv){ return enhance(cv); },
+        recognize: function(cv){ return worker.recognize(cv); }
+    };
+}
+async function getEngine(onPhase){
+    if(getOcrEnginePref() === "paddle"){
+        try{
+            const inst = await ensurePaddle(function(msg){ if(onPhase) onPhase(msg); });
+            if(engineChip){
+                engineChip.hidden = false;
+                engineChip.textContent = "PP-OCRv5·高精度";
+                engineChip.classList.add("ok");
+            }
+            return paddleEngine(inst);
+        }catch(err){
+            console.warn("[OCR] PP-OCRv5 引擎加载失败，回退 Tesseract", err);
+            if(onPhase) onPhase("高精度引擎不可用，改用轻量引擎…");
+        }
+    }
+    const worker = await getWorker(function(msg){ if(onPhase) onPhase(msg); });
+    return tesseractEngine(worker);
+}
+
+/* ---------------- 图像：解码 / 旋转 / 预处理 ---------------- */
+async function fileToBitmap(file){
+    if(window.createImageBitmap){
+        try{ return await createImageBitmap(file, { imageOrientation: "from-image" }); }catch(e){ /* 回退 <img> */ }
+    }
+    return await new Promise(function(resolve, reject){
+        const url = URL.createObjectURL(file);
+        const im = new Image();
+        im.onload = function(){ URL.revokeObjectURL(url); resolve(im); };
+        im.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("图片解码失败")); };
+        im.src = url;
+    });
+}
+function drawRotated(src, deg, maxSide){
+    const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+    if(!w || !h) throw new Error("空图片");
+    const swap = (deg === 90 || deg === 270);
+    const bw = swap ? h : w, bh = swap ? w : h;
+    let scale = Math.min(1, maxSide / Math.max(bw, bh));
+    if(Math.max(bw, bh) < maxSide * 0.5) scale = Math.min(3, maxSide / Math.max(bw, bh));   // 小票放大提高识别率
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(bw * scale));
+    cv.height = Math.max(1, Math.round(bh * scale));
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.fillStyle = "#fff";
+    cx.fillRect(0, 0, cv.width, cv.height);
+    cx.save();
+    cx.translate(cv.width / 2, cv.height / 2);
+    cx.rotate(deg * Math.PI / 180);
+    cx.scale(scale, scale);
+    cx.drawImage(src, -w / 2, -h / 2, w, h);
+    cx.restore();
+    return cv;
+}
+/* Sauvola 局部自适应二值化（积分图实现）：磁卡票浅色底纹上的文字用全局阈值会破碎，
+   局部阈值能干净剥离底纹。返回 0/1 数组（1=白/背景，0=黑/文字）。 */
+function sauvolaBin(gray, W, H, win){
+    const W1 = W + 1;
+    const S = new Float64Array(W1 * (H + 1));
+    const S2 = new Float64Array(W1 * (H + 1));
+    for(let y = 1; y <= H; y++){
+        let rs = 0, rs2 = 0;
+        for(let x = 1; x <= W; x++){
+            const g = gray[(y - 1) * W + (x - 1)];
+            rs += g; rs2 += g * g;
+            S[y * W1 + x] = S[(y - 1) * W1 + x] + rs;
+            S2[y * W1 + x] = S2[(y - 1) * W1 + x] + rs2;
+        }
+    }
+    const out = new Uint8Array(W * H);
+    const r = win >> 1, K = 0.3, RR = 128;
+    for(let y = 0; y < H; y++){
+        const y0 = Math.max(0, y - r), y1 = Math.min(H - 1, y + r);
+        for(let x = 0; x < W; x++){
+            const x0 = Math.max(0, x - r), x1 = Math.min(W - 1, x + r);
+            const cnt = (y1 - y0 + 1) * (x1 - x0 + 1);
+            const a1 = (y1 + 1) * W1 + x1 + 1, b1 = y0 * W1 + x1 + 1;
+            const c1 = (y1 + 1) * W1 + x0, d1 = y0 * W1 + x0;
+            const sum = S[a1] - S[b1] - S[c1] + S[d1];
+            const sum2 = S2[a1] - S2[b1] - S2[c1] + S2[d1];
+            const m = sum / cnt;
+            const va = Math.sqrt(Math.max(0, sum2 / cnt - m * m));
+            const th = m * (1 + K * (va / RR - 1));
+            out[y * W + x] = gray[y * W + x] > th ? 1 : 0;
+        }
+    }
+    return out;
+}
+function enhance(cv){
+    try{
+        const cx = cv.getContext("2d", { willReadFrequently: true });
+        const W = cv.width, H = cv.height;
+        const d = cx.getImageData(0, 0, W, H);
+        const a = d.data, n = W * H;
+        const gray = new Uint8Array(n);
+        for(let i = 0, j = 0; i < n; i++, j += 4){
+            gray[i] = (a[j] * 299 + a[j + 1] * 587 + a[j + 2] * 114) / 1000 | 0;
+        }
+        // 主路径：Sauvola 二值化（窗口随分辨率缩放）；黑像素占比过高说明整图偏暗失败，回退灰度拉伸
+        const win = Math.max(15, Math.round(Math.min(W, H) / 40));
+        const bin = sauvolaBin(gray, W, H, win);
+        let black = 0;
+        for(let i = 0; i < n; i++) if(!bin[i]) black++;
+        if(black / n <= 0.4){
+            for(let i = 0, j = 0; i < n; i++, j += 4){
+                const v = bin[i] ? 255 : 0;
+                a[j] = a[j + 1] = a[j + 2] = v; a[j + 3] = 255;
+            }
+            cx.putImageData(d, 0, 0);
+            return cv;
+        }
+        // 回退：灰度化 + 2%~98% 分位对比度拉伸
+        const hist = new Uint32Array(256);
+        for(let i = 0; i < n; i++) hist[gray[i]]++;
+        let acc = 0, lo = 0, hi = 255;
+        for(let v = 0; v < 256; v++){ acc += hist[v]; if(acc >= n * 0.02){ lo = v; break; } }
+        acc = 0;
+        for(let v = 255; v >= 0; v--){ acc += hist[v]; if(acc >= n * 0.02){ hi = v; break; } }
+        const range = Math.max(30, hi - lo);
+        const lut = new Uint8ClampedArray(256);
+        for(let v = 0; v < 256; v++) lut[v] = Math.max(0, Math.min(255, (v - lo) * 255 / range));
+        for(let j = 0; j < a.length; j += 4){ a[j] = a[j + 1] = a[j + 2] = lut[a[j]]; }
+        cx.putImageData(d, 0, 0);
+    }catch(e){ /* 预处理失败按原图识别 */ }
+    return cv;
+}
+function ocrScore(data){
+    const txt = (data && data.text) || "";
+    const cjk = txt.match(/[\u4e00-\u9fa5]/g);
+    const aln = txt.match(/[A-Za-z0-9]/g);
+    return (data.confidence || 0) * Math.min(1, ((cjk ? cjk.length * 2 : 0) + (aln ? aln.length : 0)) / 60);
+}
+/* 票面区域检测：Otsu 全局阈值二值化 + 行/列投影取最长亮区间，把票面从深色背景中裁出。
+   返回原图坐标 {x,y,w,h}；票面几乎满图或区间可疑时返回 null（按原图识别）。 */
+function detectCrop(src){
+    const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+    if(!w || !h) return null;
+    const S = 320;
+    const sw = Math.max(8, Math.round(w * Math.min(1, S / Math.max(w, h))));
+    const sh = Math.max(8, Math.round(h * Math.min(1, S / Math.max(w, h))));
+    const cv = document.createElement("canvas");
+    cv.width = sw; cv.height = sh;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, sw, sh);
+    cx.drawImage(src, 0, 0, sw, sh);
+    const d = cx.getImageData(0, 0, sw, sh).data;
+    const n = sw * sh, gray = new Uint8Array(n), hist = new Uint32Array(256);
+    for(let i = 0, j = 0; i < n; i++, j += 4){
+        const v = (d[j] * 299 + d[j + 1] * 587 + d[j + 2] * 114) / 1000 | 0;
+        gray[i] = v; hist[v]++;
+    }
+    let sum = 0;
+    for(let v = 0; v < 256; v++) sum += v * hist[v];
+    let sumB = 0, wB = 0, bestVar = -1, th = 128;
+    for(let v = 0; v < 256; v++){
+        wB += hist[v]; if(!wB) continue;
+        const wF = n - wB; if(!wF) break;
+        sumB += v * hist[v];
+        const diff = (sumB / wB) - (sum - sumB) / wF;
+        const varr = wB * wF * diff * diff;
+        if(varr > bestVar){ bestVar = varr; th = v; }
+    }
+    const rowOk = new Uint8Array(sh), colOk = new Uint8Array(sw);
+    for(let y = 0; y < sh; y++){
+        let r = 0; const off = y * sw;
+        for(let x = 0; x < sw; x++) if(gray[off + x] > th) r++;
+        rowOk[y] = r >= sw * 0.30 ? 1 : 0;
+    }
+    for(let x = 0; x < sw; x++){
+        let c = 0;
+        for(let y = 0; y < sh; y++) if(gray[y * sw + x] > th) c++;
+        colOk[x] = c >= sh * 0.30 ? 1 : 0;
+    }
+    function longest(ok, gapMax){
+        let b0 = 0, b1 = -1, c0 = -1, gap = 0;
+        for(let i = 0; i < ok.length; i++){
+            if(ok[i]){ if(c0 < 0) c0 = i; gap = 0; }
+            else if(c0 >= 0){
+                gap++;
+                if(gap > gapMax){
+                    if(i - gap - 1 > b1 - b0){ b0 = c0; b1 = i - gap - 1; }
+                    c0 = -1; gap = 0;
+                }
+            }
+        }
+        if(c0 >= 0 && ok.length - 1 - c0 > b1 - b0){ b0 = c0; b1 = ok.length - 1; }
+        return b1 >= b0 ? [b0, b1] : null;
+    }
+    const rr = longest(rowOk, Math.max(2, Math.round(sh * 0.02)));
+    if(!rr) return null;
+    const cc = longest(colOk, Math.max(2, Math.round(sw * 0.02)));
+    if(!cc) return null;
+    const fracH = (rr[1] - rr[0] + 1) / sh, fracW = (cc[1] - cc[0] + 1) / sw;
+    if(fracH * fracW > 0.92) return null;          // 票面几乎满图，无需裁剪
+    if(fracH < 0.25 || fracW < 0.25) return null;  // 区间过小视为误检
+    const x0 = Math.max(0, Math.floor(cc[0] / sw * w - w * 0.02));
+    const x1 = Math.min(w, Math.ceil((cc[1] + 1) / sw * w + w * 0.02));
+    const y0 = Math.max(0, Math.floor(rr[0] / sh * h - h * 0.02));
+    const y1 = Math.min(h, Math.ceil((rr[1] + 1) / sh * h + h * 0.02));
+    if(x1 - x0 < w * 0.2 || y1 - y0 < h * 0.2) return null;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function cropBitmap(src, r){
+    const cv = document.createElement("canvas");
+    cv.width = r.w; cv.height = r.h;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, r.w, r.h);
+    cx.drawImage(src, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    return cv;
+}
+async function recognizeItem(it, worker, onPhase){
+    const src = await fileToBitmap(it.file);
+    let base = src;
+    try{
+        // ① 票面区域检测裁剪：把票面从深色背景中裁出，识别分辨率全部让给票面
+        try{
+            const r = detectCrop(src);
+            if(r){ base = cropBitmap(src, r); it.cropped = true; }
+        }catch(e){ /* 裁剪失败按原图识别 */ }
+        // ② 方向探测：按裁剪后票面宽高比缩小候选方向（磁卡票横放约 1.59:1），
+        //    竖矩形只在 90°/270° 中选，横矩形只在 0°/180° 中选，避免整图噪声导致误判
+        const PROBE = 640;
+        const bw = base.width, bh = base.height;
+        let angles;
+        if(bh > bw * 1.08) angles = [90, 270];
+        else if(bw > bh * 1.08) angles = [0, 180];
+        else angles = [0, 90, 270, 180];
+        let best = { deg: angles[0], score: -1 };
+        for(const deg of angles){
+            // V6.0：worker 参数已是引擎对象，预处理（enhance）由引擎自带 pre 决定（PP 引擎跳过二值化）
+            const sc = ocrScore((await worker.recognize(worker.pre(drawRotated(base, deg, PROBE)))).data);
+            if(sc > best.score) best = { deg: deg, score: sc };
+        }
+        it.rotDeg = best.deg;
+        if(onPhase) onPhase("识别中（方向 " + best.deg + "°）…");
+        const full = worker.pre(drawRotated(base, best.deg, 1900));
+        const res = await worker.recognize(full);
+        it.text = res.data.text || "";
+        it.conf = Math.round(res.data.confidence || 0);
+        it.parsed = parseOcrText(it.text);
+        it.status = "done";
+        return true;
+    } finally {
+        if(src && src.close){ try{ src.close(); }catch(e){} }
+    }
+}
+
+/* ---------------- 字段解析（OCR 文本 → 票面字段） ---------------- */
+const SEAT_CLASSES = ["商务座","特等座","优选一等座","一等座","二等座","软卧","硬卧","动卧","软座","硬座","无座"];
+const NAME_BLACKLIST = ["报销","凭证","使用","遗失","不补","退票","改签","交回","车站","检票","仅供","乘车","日期","车次","座位","票价","姓名","身份证","限乘","当日","候车"];
+let pyRev = null;
+function pyIndex(){
+    if(pyRev) return pyRev;
+    pyRev = {};
+    const dict = window.stationsNamePY || {};
+    for(const name in dict){
+        const py = String(dict[name] || "").toLowerCase();
+        if(py && !pyRev[py]) pyRev[py] = name;
+    }
+    return pyRev;
+}
+function pyLookup(word){
+    return pyIndex()[word.toLowerCase()] || "";
+}
+function editDist(a, b, cap){
+    const m = a.length, n = b.length;
+    const prev = new Array(n + 1), cur = new Array(n + 1);
+    for(let j = 0; j <= n; j++) prev[j] = j;
+    for(let i = 1; i <= m; i++){
+        cur[0] = i;
+        let rowMin = cur[0];
+        for(let j = 1; j <= n; j++){
+            const cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+            if(cur[j] < rowMin) rowMin = cur[j];
+        }
+        if(rowMin > cap) return cap + 1;
+        for(let j = 0; j <= n; j++) prev[j] = cur[j];
+    }
+    return prev[n];
+}
+function pyFuzzy(word){
+    const idx = pyIndex(), w = word.toLowerCase();
+    let best = "", bestDist = 3;
+    for(const py in idx){
+        if(Math.abs(py.length - w.length) > 2) continue;
+        const d = editDist(w, py, 2);
+        if(d < bestDist){ bestDist = d; best = idx[py]; }
+    }
+    return bestDist <= 2 ? best : "";
+}
+function stationsFromPinyin(lines){
+    const hits = [];
+    for(const ln of lines){
+        const words = ln.split(/[^A-Za-z]+/);
+        for(const w of words){
+            if(w.length < 4 || w.length > 20) continue;
+            if(/^(?:JM|PDF|OCR|JPG|PNG|HTTP|WWW)$/i.test(w)) continue;
+            let hit = pyLookup(w);
+            if(!hit) hit = pyFuzzy(w);
+            if(hit && hits.indexOf(hit) < 0) hits.push(hit);
+            if(hits.length >= 2) return hits;
+        }
+    }
+    return hits;
+}
+function parseOcrText(text){
+    const lines = String(text || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const t = lines.join(" ").replace(/\s+/g, " ");
+    const out = { flags: {}, infoline1: 2, infoline2: 0 };
+
+    /* 底部黑字长票号 + 顶部红字票号：48778000050710J073241 / J073241（写入规则与 PDF 一致） */
+    const tu = t.toUpperCase();
+    const mLong = tu.match(/(\d{13,19}[A-Z]\d{6})(?!\d)/);
+    if(mLong){
+        out.ticketNo = mLong[1];
+        const mRed = mLong[1].match(/([A-Z]\d{6})$/);
+        if(mRed) out.ticketMachineId = mRed[1];
+    }
+    if(!out.ticketMachineId){
+        const mRed2 = tu.match(/(?:^|[\s:：])([A-Z]\d{6})(?=[\s.,;]|$)/);
+        if(mRed2) out.ticketMachineId = mRed2[1];
+    }
+
+    /* 车次：从剔除票号的文本中找（车次字母白名单与票号字母 J/B/L/W 天然错开） */
+    let tTrain = tu;
+    if(out.ticketNo) tTrain = tTrain.split(out.ticketNo).join(" ");
+    if(out.ticketMachineId) tTrain = tTrain.split(out.ticketMachineId).join(" ");
+    const mTrain = tTrain.match(/(?:^|[^A-Z0-9])([GDCSTKYZ]\d{1,5})(?![A-Z0-9])/);
+    if(mTrain) out.trainNo = mTrain[1];
+
+    /* 站名：①拼音反查站名库（最可靠） ②「X站」后缀 */
+    const pyHits = stationsFromPinyin(lines);
+    if(pyHits.length >= 2){ out.startStation = pyHits[0]; out.endStation = pyHits[1]; }
+    if(!out.startStation || !out.endStation){
+        const cnHits = [];
+        const re = /([\u4e00-\u9fa5]{1,5})站/g;
+        let m;
+        while((m = re.exec(t)) !== null){
+            const name = m[1];
+            if(NAME_BLACKLIST.some(b => name.indexOf(b) >= 0)) continue;
+            if(cnHits.indexOf(name) < 0) cnHits.push(name);
+        }
+        const dict = window.stationsNamePY || {};
+        for(const n of cnHits){
+            if(dict[n]){
+                if(!out.startStation){ out.startStation = n; continue; }
+                if(!out.endStation && n !== out.startStation) out.endStation = n;
+            }
+        }
+        if((!out.startStation || !out.endStation) && cnHits.length >= 2){
+            if(!out.startStation) out.startStation = cnHits[0];
+            if(!out.endStation) out.endStation = cnHits[1];
+        }
+    }
+
+    /* 日期：2025年06月27日 / 2025.06.27 / 2025-06-27 */
+    let md = t.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?/);
+    if(!md) md = t.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+    if(md){
+        const yy = +md[1], mm = +md[2], dd = +md[3];
+        if(yy >= 2000 && yy <= 2099 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31){
+            out.date = md[1] + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+        }
+    }
+
+    /* 时间：优先「09:21开」 */
+    let mt = t.match(/(\d{1,2}):(\d{2})\s*开/);
+    if(!mt) mt = t.match(/(?:^|\s)(\d{1,2}):(\d{2})(?=[\s.,]|$)/);
+    if(mt){
+        const hh = +mt[1], mi = +mt[2];
+        if(hh >= 0 && hh <= 23 && mi >= 0 && mi <= 59){
+            out.time = String(hh).padStart(2, "0") + ":" + String(mi).padStart(2, "0");
+        }
+    }
+
+    /* 车厢 / 座位：12车10F号 / 03车014号 */
+    const mc = t.match(/(\d{1,2})\s*车\s*(\d{1,3}[A-Za-z]?)(?![\dA-Za-z])/);
+    if(mc){ out.carriageNo = mc[1]; out.seatNo = mc[2]; }
+
+    /* 席别 */
+    for(const sc of SEAT_CLASSES){
+        if(t.indexOf(sc) >= 0){ out.seatClass = sc; break; }
+    }
+
+    /* 票价：￥146.0元 / ¥ 351.5 */
+    let mp = t.match(/[¥￥]\s*(\d{1,4}(?:\.\d{1,2})?)/);
+    if(!mp) mp = t.match(/(\d{1,4}\.\d{1,2})\s*元/);
+    if(mp) out.price = mp[1];
+
+    /* 姓名 + 证件号（支持打码 5003812000****3337 与完整 18 位；证件在前优先，姓名在后） */
+    const idRe = "([0-9]{2,12}\\*{2,10}[0-9]{2,6}|[0-9]{17}[0-9Xx]|[0-9]{15})(?![0-9*])";
+    let nm = t.match(new RegExp(idRe + "[\\s:：]*([\\u4e00-\\u9fa5]{2,4})(?![\\u4e00-\\u9fa5])"));
+    if(nm){
+        out.identity = nm[1];
+        if(NAME_BLACKLIST.every(b => nm[2].indexOf(b) < 0)) out.name = nm[2];
+    }
+    if(!out.name || !out.identity){
+        const nb = t.match(new RegExp("([\\u4e00-\\u9fa5]{2,4})[\\s:：]*" + idRe));
+        if(nb){
+            if(!out.identity) out.identity = nb[2];
+            if(!out.name && NAME_BLACKLIST.every(b => nb[1].indexOf(b) < 0)) out.name = nb[1];
+        }
+    }
+
+    /* 检票口：新版「检票:1 / 检票:12A1B」；旧版「X检票口 / 检票口 X」 */
+    let ck = t.match(/检票[:：]?\s*([0-9A-Za-z\/\-]{1,12})(?![0-9A-Za-z])/);
+    if(ck) out.checkinRoom = "检票: " + ck[1];
+    else{
+        const ck2 = t.match(/([\u4e00-\u9fa5]{0,6})\s*(\d{1,2}[A-Za-z]?\d{0,2}[A-Za-z]?)\s*检票口/);
+        if(ck2 && (ck2[1] || ck2[2])) out.checkinRoom = (ck2[1] || "") + (ck2[2] ? " " + ck2[2] : "") + "检票口";
+        else{
+            const ck3 = t.match(/检票口\s*([A-Za-z]?\d{1,2}[A-Za-z]?\d{0,2}[A-Za-z]?)(?![0-9A-Za-z])(?!车)/);
+            if(ck3) out.checkinRoom = ck3[1] + "检票口";
+        }
+    }
+
+    /* 优惠 / 标志 / 备注 */
+    out.flags.discount = t.indexOf("惠") >= 0;
+    out.flags.student = t.indexOf("学") >= 0;
+    out.flags.online = t.indexOf("网购") >= 0;
+    out.flags.child = t.indexOf("孩") >= 0;
+    out.infoline1 = t.indexOf("限乘当日当次车") >= 0 ? 2 : 0;
+    out.infoline2 = t.indexOf("仅供报销使用") >= 0 ? 0 : 1;
+    return out;
+}
+
+/* ---------------- 表单填充 / 行程生成（与 PDF 管线同一写入规则） ---------------- */
+function fillFormFromParsed(p){
+    const set = function(id, v){
+        const el = document.getElementById(id);
+        if(el) el.value = (v == null) ? "" : String(v);
+    };
+    set("startStation", p.startStation);
+    set("endStation", p.endStation);
+    if(window.__fuzzyPy){
+        let py = p.startStation ? window.__fuzzyPy(p.startStation) : "";
+        set("startStationPY", py ? py.charAt(0).toUpperCase() + py.slice(1) : "");
+        py = p.endStation ? window.__fuzzyPy(p.endStation) : "";
+        set("endStationPY", py ? py.charAt(0).toUpperCase() + py.slice(1) : "");
+    }
+    set("trainNo", p.trainNo);
+    set("date", p.date);
+    set("time", p.time);
+    set("carriageNo", p.carriageNo);
+    set("seatNo", p.seatNo);
+    set("seatPosition", p.seatPosition);
+    set("seatClass", p.seatClass);
+    set("checkinRoom", p.checkinRoom);
+    set("name", p.name);
+    set("identity", p.identity);
+    set("ticketNo", p.ticketMachineId);        // 顶部红字（短串）——与 PDF 写入规则一致
+    set("ticketMachineId", p.ticketNo);        // 底部黑字（长串）
+    set("price", p.price);
+    const q = document.getElementById("qrcodeString");
+    if(q && !q.value) q.value = "https://www.12306.cn/";
+    [["isChild", "child"], ["isStudent", "student"], ["isOnline", "online"], ["isDiscount", "discount"]]
+        .forEach(function(pair){
+            const node = document.getElementById(pair[0]);
+            if(node) node.checked = !!(p.flags && p.flags[pair[1]]);
+        });
+    set("infoline1", p.infoline1 === undefined ? 2 : p.infoline1);
+    set("infoline2", p.infoline2 === undefined ? 0 : p.infoline2);
+    if(p.trainNo && window.__pushTrainNo) window.__pushTrainNo(p.trainNo);
+}
+async function applyItem(it){
+    if(!it || !it.parsed) return false;
+    const batch = window.__batch;
+    if(!batch || !window.__makeTrip) return false;
+    window.__extracting = true;                // 与 PDF 提取互斥：防 saveInfo 中间态写回
+    batch.active = false;
+    try{
+        fillFormFromParsed(it.parsed);
+        if(typeof redraw === "function") redraw();
+        batch.items.push(window.__makeTrip((it.parsed.trainNo || "OCR") + "_" + (it.parsed.date || "")));
+        it.confirmed = true;
+        batch.active = true;
+        batch.index = batch.items.length - 1;
+        batch.uiIndex = batch.index;
+        if(window.__applyTrip){                  // applyParsed 定义于 PDF 模块 IIFE 内，跨块不可见；等效调用其内部全局钩子
+            window.__applyTrip(batch.items[batch.index]);
+            if(typeof redraw === "function") redraw();
+        }
+        if(window.updateBatchNav) window.updateBatchNav();
+        return true;
+    } finally {
+        window.__extracting = false;
+    }
+}
+
+/* ---------------- CSV 导出（UTF-8 BOM，Excel 可直接打开） ---------------- */
+function csvCell(v){
+    const s = String(v == null ? "" : v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function buildCsv(){
+    const rows = items.filter(it => it.confirmed && it.parsed);
+    if(!rows.length) return "";
+    const head = ["序号","出发站","到达站","车次","乘车日期","开车时间","车厢","座位","席别","票价(元)","姓名","证件号","检票口","票号(顶部红字)","票号(底部黑字)","识别置信度(%)","来源图片"];
+    const lines = [head.map(csvCell).join(",")];
+    rows.forEach(function(it, i){
+        const p = it.parsed;
+        lines.push([i + 1, p.startStation, p.endStation, p.trainNo, p.date, p.time,
+            p.carriageNo, p.seatNo, p.seatClass, p.price, p.name, p.identity,
+            p.checkinRoom, p.ticketMachineId, p.ticketNo, it.conf || "", it.name || ""]
+            .map(csvCell).join(","));
+    });
+    return "\uFEFF" + lines.join("\r\n");
+}
+function exportCsv(){
+    const csv = buildCsv();
+    if(!csv){ showStatus("err", "暂无可导出的结果：请先对识别结果点击「生成行程」确认"); return; }
+    try{
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const d = new Date();
+        const pad = function(n){ return String(n).padStart(2, "0"); };
+        const stamp = "" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "_" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+        a.href = url;
+        a.download = "火车票识别结果_" + stamp + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+        const n = items.filter(it => it.confirmed && it.parsed).length;
+        showStatus("ok", "已导出 " + n + " 条识别结果（CSV · UTF-8 BOM，Excel 可直接打开）");
+    }catch(e){
+        showStatus("err", "导出失败：" + ((e && e.message) || e));
+    }
+}
+
+/* ---------------- 结果列表 UI ---------------- */
+const FIELD_DEFS = [
+    ["startStation", "出发站"], ["endStation", "到达站"], ["trainNo", "车次"],
+    ["date", "日期"], ["time", "时间"], ["carriageNo", "车厢"], ["seatNo", "座位"],
+    ["seatClass", "席别"], ["price", "票价"], ["name", "姓名"], ["identity", "证件号"],
+    ["checkinRoom", "检票口"], ["ticketMachineId", "红字票号"], ["ticketNo", "底部票号"]
+];
+function mkBtn(text, onclick){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn btn-mini ocr-mini";
+    b.textContent = text;
+    b.addEventListener("click", onclick);
+    return b;
+}
+function updateChip(it){
+    if(!it.chip) return;
+    let txt = "", cls = "ocr-chip";
+    if(it.status === "pending"){ txt = "待识别"; }
+    else if(it.status === "busy"){ txt = "识别中…"; cls += " busy"; }
+    else if(it.status === "error"){ txt = "识别失败"; cls += " err"; }
+    else if(it.status === "done"){
+        if(it.confirmed){ txt = "已生成行程" + (it.conf ? " · " + it.conf + "%" : ""); cls += " ok"; }
+        else{
+            txt = "已识别" + (it.conf ? " · " + it.conf + "%" : "") + (it.edited ? " · 已修改" : "") + (it.rotDeg ? " · 转" + it.rotDeg + "°" : "");
+        }
+    }
+    it.chip.className = cls;
+    it.chip.textContent = txt;
+}
+function renderFields(it){
+    if(!it.el) return;
+    const main = it.el.querySelector(".ocr-main");
+    if(!main) return;
+    if(it.fieldsEl && it.fieldsEl.parentNode) it.fieldsEl.parentNode.removeChild(it.fieldsEl);
+    const grid = document.createElement("div");
+    grid.className = "ocr-fields";
+    FIELD_DEFS.forEach(function(def){
+        const key = def[0], label = def[1];
+        const wrap = document.createElement("label");
+        wrap.className = "ocr-f";
+        const cap = document.createElement("span");
+        cap.textContent = label;
+        let inp;
+        if(key === "seatClass"){
+            inp = document.createElement("select");
+            const o0 = document.createElement("option");
+            o0.value = ""; o0.textContent = "—";
+            inp.appendChild(o0);
+            SEAT_CLASSES.forEach(function(sc){
+                const o = document.createElement("option");
+                o.value = sc; o.textContent = sc;
+                inp.appendChild(o);
+            });
+        }else{
+            inp = document.createElement("input");
+            inp.type = "text";
+            if(key === "date") inp.placeholder = "yyyy-mm-dd";
+            if(key === "price") inp.placeholder = "0.00";
+        }
+        inp.value = (it.parsed && it.parsed[key] != null) ? String(it.parsed[key]) : "";
+        inp.addEventListener("input", function(){
+            if(!it.parsed) it.parsed = {};
+            it.parsed[key] = inp.value;
+            it.edited = true;
+            updateChip(it);
+        });
+        wrap.appendChild(cap);
+        wrap.appendChild(inp);
+        grid.appendChild(wrap);
+    });
+    it.fieldsEl = grid;
+    main.appendChild(grid);
+}
+function buildItemNode(it){
+    const box = document.createElement("div");
+    box.className = "ocr-item" + (it.status === "error" ? " err" : "") + (it.confirmed ? " done" : "");
+    const img = document.createElement("img");
+    img.className = "ocr-thumb";
+    img.alt = it.name || "";
+    it.thumbUrl = URL.createObjectURL(it.file);
+    img.src = it.thumbUrl;
+    box.appendChild(img);
+    const main = document.createElement("div");
+    main.className = "ocr-main";
+    box.appendChild(main);
+    const head = document.createElement("div");
+    head.className = "ocr-item-head";
+    const fn = document.createElement("span");
+    fn.className = "ocr-fname";
+    fn.textContent = it.name || "图片";
+    fn.title = it.name || "";
+    const chip = document.createElement("span");
+    chip.className = "ocr-chip";
+    it.chip = chip;
+    const sp = document.createElement("span");
+    sp.className = "ocr-spacer";
+    head.appendChild(fn);
+    head.appendChild(chip);
+    head.appendChild(sp);
+    head.appendChild(mkBtn("生成行程", async function(){
+        const ok = await applyItem(it);
+        if(ok){
+            box.classList.add("done");
+            updateChip(it);
+            showStatus("ok", "已按识别结果生成行程（第 " + window.__batch.items.length + " 条），可在预览区查看与继续编辑");
+        }else{
+            showStatus("err", "该结果尚未识别成功，无法生成行程");
+        }
+    }));
+    head.appendChild(mkBtn("重新识别", async function(){ await reRun(it); }));
+    head.appendChild(mkBtn("删除", function(){ removeItem(it); }));
+    main.appendChild(head);
+    return box;
+}
+function renderList(){
+    listEl.textContent = "";
+    listEl.hidden = !items.length;
+    actionsEl.hidden = !items.length;
+    items.forEach(function(it){
+        if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} }
+        it.el = buildItemNode(it);
+        listEl.appendChild(it.el);
+        updateChip(it);
+        if(it.parsed) renderFields(it);
+    });
+}
+function updateChipAll(){ items.forEach(updateChip); }
+function syncButtons(){
+    const hasPending = items.some(it => it.status === "pending" || it.status === "error");
+    runBtn.disabled = running || !hasPending;
+    listEl.hidden = !items.length;
+    actionsEl.hidden = !items.length;
+}
+function removeItem(it){
+    const i = items.indexOf(it);
+    if(i < 0) return;
+    items.splice(i, 1);
+    if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} }
+    renderList();
+    syncButtons();
+}
+function addFiles(fl){
+    const arr = Array.prototype.slice.call(fl || []).filter(f => f && (/^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp)$/i.test(f.name)));
+    if(!arr.length){ showStatus("err", "请选择图片文件（JPG / PNG / WebP 等）"); return; }
+    arr.forEach(f => items.push({ file: f, name: f.name, status: "pending", confirmed: false }));
+    renderList();
+    syncButtons();
+    showStatus("", "已添加 " + arr.length + " 张照片，共 " + items.length + " 张待识别，点击「开始识别」");
+}
+
+/* ---------------- 识别调度 ---------------- */
+function wasmGuard(){
+    if(typeof WebAssembly === "undefined"){
+        alert("当前浏览器内核过旧，缺少 WebAssembly 支持，无法进行本地 OCR 识别。\n请升级浏览器（推荐最新版 Chrome / Edge / 夸克）后重试。");
+        return false;
+    }
+    return true;
+}
+async function runAll(){
+    if(running) return;
+    if(!items.length){ showStatus("err", "请先添加纸质火车票照片"); return; }
+    if(!wasmGuard()) return;
+    const todo = items.filter(it => it.status === "pending" || it.status === "error");
+    if(!todo.length){ showStatus("ok", "全部照片均已识别：核对字段后「生成行程 / 导出CSV」，或对单张「重新识别」"); return; }
+    running = true;
+    syncButtons();
+    progressEl.hidden = false;
+    progressFill.style.width = "0%";
+    let engine;
+    try{
+        engine = await getEngine(function(msg){
+            progressText.textContent = msg;
+            progressEl.hidden = false;
+        });
+    }catch(err){
+        progressEl.hidden = true;
+        showStatus("err", "识别引擎加载失败：" + ((err && err.message) || err));
+        running = false;
+        syncButtons();
+        return;
+    }
+    let okN = 0, errN = 0;
+    for(let i = 0; i < todo.length; i++){
+        const it = todo[i];
+        progressFill.style.width = Math.round(i / todo.length * 100) + "%";
+        progressText.textContent = "识别中 " + (i + 1) + "/" + todo.length + " · " + (it.name || "");
+        it.status = "busy";
+        updateChip(it);
+        const t0 = Date.now();
+        try{
+            await recognizeItem(it, engine);
+            it.el.classList.remove("err");
+            renderFields(it);
+            okN++;
+            console.log("[OCR] " + it.name + " 完成 " + (Date.now() - t0) + "ms conf=" + it.conf + " rot=" + it.rotDeg + "°");
+        }catch(err){
+            console.error("[OCR] " + it.name + " 失败", err);
+            it.status = "error";
+            it.el.classList.add("err");
+            errN++;
+        }
+        updateChip(it);
+    }
+    progressFill.style.width = "100%";
+    progressText.textContent = "完成";
+    setTimeout(function(){ progressEl.hidden = true; }, 900);
+    running = false;
+    syncButtons();
+    if(errN) showStatus("err", "识别完成：成功 " + okN + " 张，失败 " + errN + " 张（可对失败项单独「重新识别」）");
+    else showStatus("ok", "识别完成：成功 " + okN + " 张，请核对各字段后「生成行程」或「导出CSV」");
+}
+async function reRun(it){
+    if(running || it.status === "busy") return;
+    if(!wasmGuard()) return;
+    running = true;
+    syncButtons();
+    progressEl.hidden = false;
+    progressFill.style.width = "0%";
+    try{
+        const engine = await getEngine(function(msg){
+            progressText.textContent = msg;
+            progressEl.hidden = false;
+        });
+        progressText.textContent = "识别中 · " + (it.name || "");
+        it.status = "busy";
+        updateChip(it);
+        await recognizeItem(it, engine);
+        it.el.classList.remove("err");
+        renderFields(it);
+        updateChip(it);
+        showStatus("ok", "重新识别完成，请核对字段");
+    }catch(err){
+        it.status = "error";
+        updateChip(it);
+        it.el.classList.add("err");
+        showStatus("err", "识别失败：" + ((err && err.message) || err));
+    }
+    progressEl.hidden = true;
+    running = false;
+    syncButtons();
+}
+async function applyAll(){
+    if(running) return;
+    const todo = items.filter(it => it.parsed && !it.confirmed);
+    if(!todo.length){ showStatus("err", "没有待确认的识别结果：请先完成识别"); return; }
+    let okN = 0, failN = 0;
+    for(const it of todo){
+        try{
+            if(await applyItem(it)){
+                okN++;
+                it.el.classList.add("done");
+                updateChip(it);
+            }else{
+                failN++;
+            }
+        }catch(err){
+            failN++;
+            console.error("[OCR] 生成行程失败 " + (it.name || ""), err);
+        }
+    }
+    if(failN) showStatus("err", "已生成 " + okN + " 条行程，" + failN + " 条失败（可修正字段后对该条单独「生成行程」）");
+    else showStatus("ok", "已批量生成 " + okN + " 条行程，可用预览区「‹ ›」逐张查看，或「导出CSV」");
+}
+
+/* ---------------- 事件绑定 ---------------- */
+zone.addEventListener("click", function(){ fileInput.click(); });
+zone.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
+});
+zone.addEventListener("dragover", function(e){ e.preventDefault(); zone.classList.add("dragover"); });
+zone.addEventListener("dragleave", function(){ zone.classList.remove("dragover"); });
+zone.addEventListener("drop", function(e){
+    e.preventDefault();
+    zone.classList.remove("dragover");
+    if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener("change", function(){
+    addFiles(fileInput.files);
+    fileInput.value = "";                      // 允许再次选择同一文件
+});
+addBtn.addEventListener("click", function(){ fileInput.click(); });
+runBtn.addEventListener("click", runAll);
+$("ocrApplyAll").addEventListener("click", applyAll);
+$("ocrExport").addEventListener("click", exportCsv);
+$("ocrClear").addEventListener("click", function(){
+    if(!items.length) return;
+    if(!window.confirm("确定清空全部照片与识别结果？（已生成的行程不受影响）")) return;
+    items.forEach(function(it){ if(it.thumbUrl){ try{ URL.revokeObjectURL(it.thumbUrl); }catch(e){} } });
+    items.length = 0;                          // 保持数组引用（__ocrItems 钩子）不变
+    renderList();
+    syncButtons();
+    showStatus("", "");
+});
+
+/* ---------------- 调试钩子 ---------------- */
+window.__ocrParse = parseOcrText;
+window.__ocrItems = items;
+window.__ocrBuildCsv = buildCsv;
+window.__ocrAddFiles = addFiles;
+window.__ocrApplyItem = applyItem;
+window.__ocrApplyAll = applyAll;
+window.__ocrGetWorker = getWorker;
+window.__ocrState = function(){
+    return { running: running, count: items.length, statuses: items.map(it => it.status) };
+};
 })();
 </script>
 </body>

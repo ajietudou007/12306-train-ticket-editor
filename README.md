@@ -4,7 +4,7 @@
 
 *纯前端 · 单文件 · 零依赖 · 数据不出浏览器*
 
-![Version](https://img.shields.io/badge/version-5.9-2E7CF6)
+![Version](https://img.shields.io/badge/version-6.0-2E7CF6)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -15,9 +15,9 @@
 一个 12306 风格的火车票票根编辑器：填写行程信息即可实时生成以假乱真的车票正面与背面，  
 支持六款票面底图、模块级细节精修、12306 行程 PDF 智能导入与多行程管理，可一键导出图片。
 
-**🚀 在线使用**：<https://ajietudou007.github.io/12306-train-ticket-editor/?v=5.9>
+**🚀 在线使用**：<https://ajietudou007.github.io/12306-train-ticket-editor/?v=6.0>
 
-> 💡 链接自带版本参数 `?v=5.9` 以绕过 CDN / 浏览器缓存。若页面仍显示旧版本，请强制刷新（`Cmd/Ctrl + Shift + R`）。
+> 💡 链接自带版本参数 `?v=6.0` 以绕过 CDN / 浏览器缓存。若页面仍显示旧版本，请强制刷新（`Cmd/Ctrl + Shift + R`）。
 
 </div>
 
@@ -44,6 +44,7 @@
 - **模块多选与批量对齐**：多选模块后可一键水平对齐、底部对齐、居左、居中、居右
 - **多行程同步渲染**：一个行程完成细节调整后，自动同步到其余所有行程并重新渲染
 - **12306 行程 PDF 智能导入**：拖入官方「行程信息提示」PDF，自动解析并回填站名 / 车次 / 日期 / 座位 / 金额等字段；手动修改优先，空白不覆盖已填内容
+- **纸质车票照片 OCR 识别**：拍照 / 扫描件自动透视矫正 + 方向转正 + 标准票幅裁剪后识别回填；支持本地引擎（PP-OCRv6 / v5 / Tesseract）与 AI 引擎（Agnes 3.0 Flash，内置 Key 开箱即用），联网引擎仅在明确确认后使用；识别结果可一键生成车票或导出 CSV
 - **智能联想**：站点 / 车次输入联想补全，站名拼音自动联动
 - **导出便捷**：单张直接下载 PNG，多张自动打包 ZIP；导出文件名按「车次_日期_站名」规范命名；触屏设备支持长按保存图片，兼容夸克 / UC 等移动内核
 - **本地持久化与分享**：行程数据 JSON 序列化（LZ-String 压缩 → URL），刷新不丢失，可生成携带数据的分享链接
@@ -87,9 +88,9 @@ python3 -m http.server 8080
 
 ```text
 GitHub火车票编辑器/
-├── index.html      # 应用本体（V5.9，含全部样式 / 脚本 / 内嵌底图资源）
+├── index.html      # 应用本体（V6.0，含全部样式 / 脚本 / 内嵌底图资源）
 ├── README.md
-├── CHANGELOG.md    # 版本日志（V4.0 → V5.9）
+├── CHANGELOG.md    # 版本日志（V4.0 → V6.0）
 ├── LICENSE         # MIT
 ├── package.json    # 仅用于 npm start 一键启动本地服务
 └── .gitignore
