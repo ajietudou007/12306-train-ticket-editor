@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.4</title>
+<title>12306火车票票根编辑器V6.2.5</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2529,8 +2529,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.4</h1>
-        <p>阿杰同学 · V6.2.4 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.5</h1>
+        <p>阿杰同学 · V6.2.5 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -3532,6 +3532,27 @@ function clampNum(v, lo, hi, dft){
     if(!isFinite(v)) v = dft;
     return Math.max(lo, Math.min(hi, v));
 }
+// V6.2.5：选区级字体/字号 runs 校验（分享载荷白名单）：区间 [s,e) 整数、字体 key 合法、
+// 字号 50~220；全默认 run（无字体且字号 100%）剔除；排序后返回，空返回 null
+function sanitizeRuns(rs){
+    if(!Array.isArray(rs)) return null;
+    var out = [];
+    rs.forEach(function(r){
+        if(!r || typeof r !== "object") return;
+        var s = Math.floor(Number(r.s)), e = Math.floor(Number(r.e));
+        if(!isFinite(s) || !isFinite(e)) return;
+        s = Math.max(0, Math.min(400, s));
+        e = Math.max(0, Math.min(400, e));
+        if(e <= s) return;
+        var font = isValidFontKey(r.font) ? r.font : "";
+        var size = clampNum(r.size, 50, 220, 100);
+        if(!font && size === 100) return;
+        out.push({ s: s, e: e, font: font, size: size });
+    });
+    if(!out.length) return null;
+    out.sort(function(a, b){ return a.s - b.s || a.e - b.e; });
+    return out;
+}
 // 校验外部（分享载荷）带入的调整表：仅保留合法票种 / 模块 / 字段，剔除全默认项
 function sanitizeModAdj(raw){
     var out = {};
@@ -3550,7 +3571,9 @@ function sanitizeModAdj(raw){
                 n.ls     = clampNum(a.ls, -6, 30, 0);
                 n.weight = clampNum(a.weight, 0, 800, 0);
                 n.font   = (isValidFontKey(a.font)) ? a.font : "";   // V5.7：模块字体（内置 key 或 custom:名字）
-                if(n.dx || n.dy || n.size !== 100 || n.ls || n.weight || n.font) o[d[0]] = n;
+                n.runs   = sanitizeRuns(a.runs);                     // V6.2.5：选区级字体/字号
+                if(n.runs === null) delete n.runs;
+                if(n.dx || n.dy || n.size !== 100 || n.ls || n.weight || n.font || (n.runs && n.runs.length)) o[d[0]] = n;
             }
         });
         var has = false; for(var k in o){ has = true; break; }
@@ -3567,7 +3590,7 @@ function getModAdj(tt, key){
     if(!per) return null;
     var a = per[key];
     if(!a) return null;
-    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font) return null;
+    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font && !(a.runs && a.runs.length)) return null;
     return a;
 }
 // 进入 / 退出模块作用域（redraw 内成对调用）
@@ -3587,8 +3610,18 @@ function setModule(key){
     window.__curModule = null;
     window.__modBoxes = [];                       // 本次 redraw 记录的命中框 [{k,x0,y0,x1,y1}]
     window.__curFontPx = 0;                       // 当前生效字号（含模块缩放），用于命中框高度
+    // V6.2.5：选区级字体/字号支持
+    window.__modTexts = {};                       // 本次 redraw 各模块实际绘制的文字（按绘制顺序拼接）——细节调整「选区」文本框数据源
+    window.__modTextOff = {};                     // 本次 redraw 各模块「上一次文字调用」的首字符在拼接文本中的下标（runs 全局下标 ↔ 调用内局部下标换算）
+    window.__lastRunW = null;                     // 最近一次带选区字体绘制的文本 {text, sumW}——段间推进的 measureText 需返回选区字体下的实际宽度
+    window.__curFontSpec = null;                  // 最近一次 setFont 的原始参数 {px, s, w, family}（s 已含模块字号缩放），runs 逐字符合成字体用
 
-    window.__resetModBoxes = function(){ window.__modBoxes.length = 0; };
+    window.__resetModBoxes = function(){
+        window.__modBoxes.length = 0;
+        window.__modTexts = {};                   // V6.2.5：同步重置模块文字登记
+        window.__modTextOff = {};
+        window.__lastRunW = null;
+    };
     window.__recModBox = function(k, x0, y0, x1, y1){
         if(!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) return;
         window.__modBoxes.push({ k:k, x0:x0, y0:y0, x1:x1, y1:y1 });
@@ -3619,8 +3652,45 @@ function setModule(key){
             }
         }
         window.__curFontPx = sizePx * s;
+        window.__curFontSpec = { px: sizePx, s: s, w: w, family: family };   // V6.2.5：选区字体合成基准
         ctx.font = w + " " + (sizePx * s) + "px " + family;
     };
+
+    /* ---------- V6.2.5：选区级字体 / 字号（runs）---------- */
+    /* adj.runs = [{s,e,font,size}]：字符区间 [s,e) 单独覆盖模块字体（font key，可空=仅字号）
+       与字号缩放（size%，相对模块字号）。区间互不重叠、按 s 升序（setRunRange 写入时保证）。
+       绘制时按 runs 切分文本逐字符设置字体；无 runs 时全部路径与 V6.2.4 逐字节一致。 */
+    function runOf(adj, i){
+        var rs = adj && adj.runs;
+        if(!rs) return null;
+        for(var j = 0; j < rs.length; j++){
+            var r = rs[j];
+            if(i >= r.s && i < r.e) return r;
+        }
+        return null;
+    }
+    function runPx(r){
+        var spec = window.__curFontSpec || { px: 24, s: 1 };
+        return spec.px * (spec.s || 1) * (((r && r.size) ? r.size : 100) / 100);
+    }
+    function runFamily(r, baseFamily){
+        if(!r || !r.font) return baseFamily;
+        var f = fontFamilyOf(r.font);
+        return f || baseFamily;   // 未知 key（分享链接带入但本机未导入）回退模块字体
+    }
+    function setRunFont(adj, i){
+        var r = runOf(adj, i);
+        var spec = window.__curFontSpec || { px: 24, s: 1, w: 400, family: "sans-serif" };
+        ctx.font = spec.w + " " + runPx(r) + "px " + runFamily(r, spec.family);
+        return r;
+    }
+    function restoreBaseFont(){
+        var s0 = window.__curFontSpec;
+        if(s0) ctx.font = s0.w + " " + (s0.px * (s0.s || 1)) + "px " + s0.family;
+    }
+    function recRunsBox(k, x, y, total, maxPx){
+        recBox(k, x, y - maxPx * 0.78, x + total, y + maxPx * 0.78);
+    }
 
     ctx.fillText = function(text, x, y){
         var m = window.__curModule;
@@ -3629,45 +3699,102 @@ function setModule(key){
             _fillText.call(this, text, x, y);
             return;
         }
+        // V6.2.5：登记模块实际绘制的文字（按绘制顺序拼接），供细节调整「选区」文本框；
+        // __off = 本次调用首字符在模块拼接文本中的下标（runs 用全局下标）
+        var __off = (window.__modTexts[m.key] || "").length;
+        window.__modTexts[m.key] = (window.__modTexts[m.key] || "") + text;
+        window.__modTextOff[m.key] = __off;
         var a = m.adj, dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0, ls = a ? (a.ls || 0) : 0;
+        if(a && a.runs && a.runs.length && text.length){
+            // V6.2.5：选区级字体/字号——逐字符按所属 run 设置字体绘制；ls>0 时保留手动字间距
+            var chars = text.split("");
+            var widths = chars.map(function(c, i){
+                setRunFont(a, __off + i);
+                return _measure.call(ctx, c).width;
+            });
+            var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
+            var maxPx = 0;
+            for(var p = 0; p < chars.length; p++){ var pp = runPx(runOf(a, __off + p)); if(pp > maxPx) maxPx = pp; }
+            var total = sumW + ls * Math.max(0, chars.length - 1);
+            var startX = x + dx;
+            if(ctx.textAlign === "center") startX = x + dx - total / 2;
+            else if(ctx.textAlign === "right") startX = x + dx - total;
+            var cx = startX;
+            for(var i = 0; i < chars.length; i++){
+                setRunFont(a, __off + i);
+                _fillText.call(ctx, chars[i], cx, y + dy);
+                if(window.__dtRunLog) window.__dtRunLog.push({ mod: m.key, gi: __off + i, ch: chars[i], font: ctx.font, px: runPx(runOf(a, __off + i)) });
+                cx += widths[i] + ls;
+            }
+            restoreBaseFont();
+            recRunsBox(m.key, startX, y + dy, total, maxPx);
+            window.__lastRunW = { text: text, sumW: sumW };   // 段间推进（ctx.measureText）取选区字体下的宽度
+            return;
+        }
         if(!ls){
             _fillText.call(this, text, x + dx, y + dy);
             recTextBox(m.key, text, x + dx, y + dy, 0);
             return;
         }
         // 手动字间距：逐字符绘制，在原排版基础上叠加 ls；按对齐方式整体平移锚点
-        var chars = text.split("");
-        if(!chars.length) return;
-        var widths = chars.map(function(c){ return _measure.call(ctx, c).width; });
-        var total = widths.reduce(function(s, w){ return s + w; }, 0) + ls * (chars.length - 1);
-        var startX = x + dx;
-        if(ctx.textAlign === "center") startX = x + dx - total/2;
-        else if(ctx.textAlign === "right") startX = x + dx - total;
-        var cx = startX;
-        for(var i = 0; i < chars.length; i++){
-            _fillText.call(ctx, chars[i], cx, y + dy);
-            cx += widths[i] + ls;
+        var chars2 = text.split("");
+        if(!chars2.length) return;
+        var widths2 = chars2.map(function(c){ return _measure.call(ctx, c).width; });
+        var total2 = widths2.reduce(function(s, w){ return s + w; }, 0) + ls * (chars2.length - 1);
+        var startX2 = x + dx;
+        if(ctx.textAlign === "center") startX2 = x + dx - total2/2;
+        else if(ctx.textAlign === "right") startX2 = x + dx - total2;
+        var cx2 = startX2;
+        for(var j = 0; j < chars2.length; j++){
+            _fillText.call(ctx, chars2[j], cx2, y + dy);
+            cx2 += widths2[j] + ls;
         }
         // startX 已按对齐方式整体平移，直接记录（避免 recTextBox 再次按 align 平移）
         var pxLs = window.__curFontPx || 24;
-        recBox(m.key, startX, y + dy - pxLs*0.78, startX + total, y + dy + pxLs*0.78);
+        recBox(m.key, startX2, y + dy - pxLs*0.78, startX2 + total2, y + dy + pxLs*0.78);
     };
 
     ctx.fillTextWithSpacing = function(text, x, y, spacing){
         var m = window.__curModule;
         text = (text == null) ? "" : String(text);
         if(spacing == null) spacing = 0;
+        var __off = m ? (window.__modTexts[m.key] || "").length : 0;   // V6.2.5：全局下标偏移
+        if(m){
+            window.__modTexts[m.key] = (window.__modTexts[m.key] || "") + text;
+            window.__modTextOff[m.key] = __off;
+        }
         var a = m ? m.adj : null;
         var dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0, sp = spacing + (a ? (a.ls || 0) : 0);
+        if(a && a.runs && a.runs.length && text.length){
+            // V6.2.5：选区级字体/字号 + 固定字间距——逐字符按所属 run 设置字体
+            var chars = text.split("");
+            var widths = chars.map(function(c, i){
+                setRunFont(a, __off + i);
+                return _measure.call(ctx, c).width;
+            });
+            var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
+            var maxPx = 0;
+            for(var p = 0; p < chars.length; p++){ var pp = runPx(runOf(a, __off + p)); if(pp > maxPx) maxPx = pp; }
+            var cx = x + dx;
+            for(var i = 0; i < chars.length; i++){
+                setRunFont(a, __off + i);
+                _fillText.call(ctx, chars[i], cx, y + dy);
+                cx += widths[i] + sp;
+            }
+            restoreBaseFont();
+            recBox(m.key, x + dx, y + dy - maxPx * 0.78, cx - sp, y + dy + maxPx * 0.78);
+            window.__lastRunW = { text: text, sumW: sumW };
+            return;
+        }
         if(sp === 0){
             _fillText.call(this, text, x + dx, y + dy);
             if(m) recTextBox(m.key, text, x + dx, y + dy, 0);
             return;
         }
-        var cx = x + dx;
-        for(var i = 0; i < text.length; i++){
-            _fillText.call(ctx, text[i], cx, y + dy);
-            cx += _measure.call(ctx, text[i]).width + sp;
+        var cx3 = x + dx;
+        for(var j = 0; j < text.length; j++){
+            _fillText.call(ctx, text[j], cx3, y + dy);
+            cx3 += _measure.call(ctx, text[j]).width + sp;
         }
         if(m) recTextBox(m.key, text, x + dx, y + dy, sp * Math.max(0, text.length - 1));
     };
@@ -3676,22 +3803,61 @@ function setModule(key){
         var m = window.__curModule;
         text = (text == null) ? "" : String(text);
         if(totalWidth == null) totalWidth = 100;
+        var __off = m ? (window.__modTexts[m.key] || "").length : 0;   // V6.2.5：全局下标偏移
+        if(m){
+            window.__modTexts[m.key] = (window.__modTexts[m.key] || "") + text;
+            window.__modTextOff[m.key] = __off;
+        }
         var a = (m && m.adj) ? m.adj : null;
         var ls = a ? (a.ls || 0) : 0;
         var dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0;
         var shrink = ls * Math.max(0, text.length - 1);
+        if(a && a.runs && a.runs.length && text.length){
+            // V6.2.5：选区级字体/字号 + 两端撑满——逐字符按所属 run 的字体测宽后均匀分布
+            var chars = text.split("");
+            var widths = chars.map(function(c, i){
+                setRunFont(a, __off + i);
+                return _measure.call(ctx, c).width;
+            });
+            var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
+            var maxPx = 0;
+            for(var p = 0; p < chars.length; p++){ var pp = runPx(runOf(a, __off + p)); if(pp > maxPx) maxPx = pp; }
+            window.__lastRunW = { text: text, sumW: sumW };
+            if(sumW > totalWidth - shrink || chars.length <= 1){
+                // 自然宽度超出可用宽度：退化为按选区字体顺序绘制
+                var cx0 = x + dx;
+                for(var i = 0; i < chars.length; i++){
+                    setRunFont(a, __off + i);
+                    _fillText.call(ctx, chars[i], cx0, y + dy);
+                    cx0 += widths[i] + ls;
+                }
+                restoreBaseFont();
+                recRunsBox(m && m.key, x + dx, y + dy, sumW + ls * Math.max(0, chars.length - 1), maxPx);
+                return;
+            }
+            var gap = (totalWidth - sumW) / (chars.length - 1) + ls;
+            var cx = x + dx;
+            for(var j = 0; j < chars.length; j++){
+                setRunFont(a, __off + j);
+                _fillText.call(ctx, chars[j], cx, y + dy);
+                cx += widths[j] + gap;
+            }
+            restoreBaseFont();
+            recBox(m && m.key, x + dx, y + dy - maxPx * 0.78, cx - gap, y + dy + maxPx * 0.78);
+            return;
+        }
         if(_measure.call(this, text).width > (totalWidth - shrink) || text.length <= 1){
             _fillText.call(this, text, x + dx, y + dy);
             recTextBox(m && m.key, text, x + dx, y + dy, 0);
             return;
         }
-        var gap = (totalWidth - _measure.call(this, text).width) / (text.length - 1) + ls;
-        var cx = x + dx;
-        for(var i = 0; i < text.length; i++){
-            _fillText.call(ctx, text[i], cx, y + dy);
-            cx += _measure.call(ctx, text[i]).width + gap;
+        var gap2 = (totalWidth - _measure.call(this, text).width) / (text.length - 1) + ls;
+        var cx4 = x + dx;
+        for(var k = 0; k < text.length; k++){
+            _fillText.call(ctx, text[k], cx4, y + dy);
+            cx4 += _measure.call(ctx, text[k]).width + gap2;
         }
-        recTextBox(m && m.key, text, x + dx, y + dy, gap * (text.length - 1));
+        recTextBox(m && m.key, text, x + dx, y + dy, gap2 * (text.length - 1));
     };
 
     ctx.strokeRect = function(x, y, w, h){
@@ -3726,9 +3892,18 @@ function setModule(key){
     ctx.measureText = function(text){
         var r = _measure.call(this, text);
         var m = window.__curModule;
-        if(m && m.adj && m.adj.ls){
+        if(m){
             var t = (text == null) ? "" : String(text);
-            return Object.create(r, { width: { value: r.width + m.adj.ls * t.length, configurable: true } });
+            // V6.2.5：模块代码段间推进用的 measureText——若查询的正是刚按选区字体绘制过的文本，
+            // 返回选区字体下的实际自然宽度（+ls×字符数，与下方 ls 补丁约定一致），混排后段间不错位
+            var st = window.__lastRunW;
+            if(st && st.text === t){
+                var lsw = (m.adj && m.adj.ls) ? m.adj.ls * t.length : 0;
+                return Object.create(r, { width: { value: st.sumW + lsw, configurable: true } });
+            }
+            if(m.adj && m.adj.ls){
+                return Object.create(r, { width: { value: r.width + m.adj.ls * t.length, configurable: true } });
+            }
         }
         return r;
     };
@@ -7525,6 +7700,24 @@ $("bmExportModeSeg").addEventListener("click", function(e){
 .dt-select:focus{ outline:none; border-color: var(--accent, #F5A623); }
 .dt-select option{ background: var(--surface, #141C25); color: var(--text, rgba(233,239,246,.92)); }
 .dt-select option[disabled]{ color: var(--text-dim, rgba(190,201,213,.5)); }
+/* V6.2.5：选区级字体/字号——「选区」文本框（readonly 供划选）与提示 */
+.dt-txtsel{
+  flex:1 1 auto; min-width:0; cursor:text;
+  font-size:11.5px; letter-spacing:.02em;
+  color: var(--text, rgba(233,239,246,.92));
+  background-color: var(--surface2, #1A232E); border:1px solid var(--border, #28343F);
+  border-radius:6px; padding:5px 9px;
+  transition: border-color .15s;
+}
+.dt-txtsel:focus{ outline:none; border-color: var(--accent, #F5A623); }
+.dt-txtsel::selection{ background: var(--accent, #F5A623); color: var(--accent-ink, #1A1205); }
+.dt-runs-hint{
+  flex:1 1 auto; min-width:0; font-size:10.5px; line-height:1.5;
+  color: var(--text-dim, rgba(190,201,213,.66)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dt-runs-hint.on{ color: var(--accent-text, #FFB63D); }
+.dt-runs-hint.warn{ color: #FF7A6B; }
+#dtRunsTxtRow .dt-lab, #dtRunsFontRow .dt-lab, #dtRunsSizeRow .dt-lab, #dtRunsOpsRow .dt-lab{ flex:0 0 46px; }
 .dt-foot{
   flex:none; display:flex; align-items:center; gap:10px;
   padding:13px 22px; border-top:1px solid var(--hairline, rgba(255,255,255,.1));
@@ -7973,6 +8166,11 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.5</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>新增</b> 细节调整<b>选区级字体 / 字号</b>：锁定文字模块后，控制面板新增「选区」文本框，列出该模块实际绘制的全部文字（多段文字按绘制顺序连续排列）——在框内<b>划选任意文字段落或字符</b>（拖黑或 Shift+方向键），即可对选中内容<b>单独设置字体（含自定义导入字体）与字号缩放（50%~200%）</b>，与整模块字体 / 字号设置互不覆盖、可任意叠加，同一模块内可混排多种字体字号（如车次号数字与「车」字各用不同字体）。</li>
+        <li><b>优化</b> 选区设置<b>即时预览与精确排版</b>：字体 / 字号调整即时重绘主票面与悬浮窗快照，并随载荷自动保存（按底图独立记忆、分享链接持久化）；多段文本模块（日期时间、车厢座位、票价等）的段间推进宽度按选区字体精确测量，混排放大缩小后段落<b>不重叠、不错位</b>；「清除选区设置」一键恢复所选文字为模块默认，模块内不同文字段落可分别设置不同样式。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.4</b><span>2026-09-26</span></div>
       <ul>
         <li><b>修复</b> 卡片虚线框内<b>状态文字与提示文字重叠</b>：出现任何状态消息（已添加 / 识别完成 / 已生成车票等）时，框内「点击或拖入纸质火车票照片」提示文字与图标自动隐藏、由状态条直接取代；清空导入内容后提示自动恢复，布局不再相互叠压。</li>
@@ -8224,6 +8422,32 @@ $("bmExportModeSeg").addEventListener("click", function(e){
               <button class="dt-chip" id="dtFontImport" type="button" title="导入自定义字体文件（TTF / WOFF / WOFF2），导入后可在字体下拉中选用">导入</button>
             </div>
           </div>
+          <!-- V6.2.5：选区级字体 / 字号——在「选区」框内划选模块文字，可对选中内容单独设置字体与字号 -->
+          <div class="dt-ctl" id="dtRunsTxtRow">
+            <span class="dt-lab">选区</span>
+            <div class="dt-fontbar">
+              <input type="text" class="dt-txtsel" id="dtRunsTxt" readonly
+                     title="本框列出所选模块实际绘制的全部文字（按绘制顺序）。划选（拖黑 / Shift+方向键）要单独设置的文字，再在下方设置选区字体 / 选区字号">
+            </div>
+          </div>
+          <div class="dt-ctl" id="dtRunsFontRow">
+            <span class="dt-lab">选区字体</span>
+            <div class="dt-fontbar">
+              <select class="dt-select" id="dtRunsFontSel" title="对选区文字单独设置字体（默认=跟随模块字体；自定义字体需先导入）"></select>
+            </div>
+          </div>
+          <div class="dt-ctl" id="dtRunsSizeRow">
+            <span class="dt-lab">选区字号</span>
+            <input type="range" id="dtRunsSize" min="50" max="200" step="1" value="100" title="对选区文字单独缩放字号（相对模块字号的百分比）">
+            <span class="dt-val" id="dtRunsSizeVal">100%</span>
+          </div>
+          <div class="dt-ctl" id="dtRunsOpsRow">
+            <span class="dt-lab">选区操作</span>
+            <div class="dt-fontbar">
+              <button class="dt-chip" id="dtRunsClear" type="button" title="清除选区内的单独字体 / 字号设置，恢复为模块默认">清除选区设置</button>
+              <span class="dt-runs-hint" id="dtRunsHint">先在「选区」框划选要单独设置的文字</span>
+            </div>
+          </div>
         </div>
         <div class="dt-sec" id="dtEmptySec">
           <div class="dt-empty">先在左侧票面单击要调整的模块<br>（如票号、检票口、二维码），<br>下方控制面板将只对所选模块生效。</div>
@@ -8294,6 +8518,17 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   var elFontRow   = document.getElementById("dtFontRow");
   var elFontFile  = document.getElementById("dtFontFile");
   var elFontImportBtn = document.getElementById("dtFontImport");
+  // V6.2.5：选区级字体 / 字号
+  var elRunsTxtRow  = document.getElementById("dtRunsTxtRow");
+  var elRunsFontRow = document.getElementById("dtRunsFontRow");
+  var elRunsSizeRow = document.getElementById("dtRunsSizeRow");
+  var elRunsOpsRow  = document.getElementById("dtRunsOpsRow");
+  var elRunsTxt     = document.getElementById("dtRunsTxt");
+  var elRunsFontSel = document.getElementById("dtRunsFontSel");
+  var elRunsSize    = document.getElementById("dtRunsSize");
+  var elRunsSizeVal = document.getElementById("dtRunsSizeVal");
+  var elRunsClear   = document.getElementById("dtRunsClear");
+  var elRunsHint    = document.getElementById("dtRunsHint");
   var btnResetMod = document.getElementById("dtResetMod");
   var btnResetAll = document.getElementById("dtResetAll");
   var elAlignSec  = document.getElementById("dtAlignSec");
@@ -8305,13 +8540,13 @@ $("bmExportModeSeg").addEventListener("click", function(e){
   }
   function adjOf(key){
     var per = window.__MODULE_ADJ[ticketType] || (window.__MODULE_ADJ[ticketType] = {});
-    if(!per[key]) per[key] = { dx:0, dy:0, size:100, ls:0, weight:0, font:"" };
+    if(!per[key]) per[key] = { dx:0, dy:0, size:100, ls:0, weight:0, font:"", runs:[] };
     return per[key];
   }
   function hasAdj(key){
     var per = window.__MODULE_ADJ[ticketType];
     var a = per && per[key];
-    return !!(a && (a.dx || a.dy || (a.size && a.size !== 100) || a.ls || a.weight || a.font));
+    return !!(a && (a.dx || a.dy || (a.size && a.size !== 100) || a.ls || a.weight || a.font || (a.runs && a.runs.length)));
   }
   // 写入调整 → 主预览即时重绘（内部同步保存载荷）→ 刷新悬浮窗快照（二维码延后绘制，补一帧）
   function apply(key, mut){
@@ -8319,7 +8554,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     var a = adjOf(key);
     mut(a);
     window.__adjDirty = true;   // V5.5：标记有调整，关闭悬浮窗时同步其他行程缩略图
-    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font){
+    if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font && !(a.runs && a.runs.length)){
       delete window.__MODULE_ADJ[ticketType][key];
     }
     redraw();
@@ -8505,6 +8740,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       elEmptySec.hidden = false;
       btnResetMod.disabled = true;
     }
+    refreshRunsUI();   // V6.2.5：选区级字体/字号行随选中模块刷新（无文字模块隐藏）
   }
   // V5.5 批量对齐：以主选模块（最后选中）包围盒为基准，其余选中模块按 dx/dy 增量对齐
   function alignSel(mode){
@@ -8531,7 +8767,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       if(!ddx && !ddy) return;
       var a = adjOf(k);
       a.dx += ddx; a.dy += ddy;
-      if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font){
+      if(!a.dx && !a.dy && (!a.size || a.size === 100) && !a.ls && !a.weight && !a.font && !(a.runs && a.runs.length)){
         delete window.__MODULE_ADJ[ticketType][k];
       }
       touched = true;
@@ -8599,15 +8835,19 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     });
   });
 
-  // ---- V5.7 模块字体：下拉刷新 + 选择 + 导入 ----
-  function refreshDtFontSel(){
-    if(!elFontSel) return;
-    var cur = elFontSel.value || "";
-    elFontSel.innerHTML = "";
+  // ---- V5.7/V6.2.5 模块字体：下拉刷新（模块级 + 选区级共用） + 选择 + 导入 ----
+  function buildFontSel(sel, emptyLabel){
+    if(!sel) return;
+    var cur = sel.value || "";
+    sel.innerHTML = "";
+    var op0 = document.createElement("option");
+    op0.value = ""; op0.textContent = emptyLabel;
+    sel.appendChild(op0);
     FONT_OPTIONS.forEach(function(o){
+      if(!o[0]) return;
       var op = document.createElement("option");
       op.value = o[0]; op.textContent = o[1];
-      elFontSel.appendChild(op);
+      sel.appendChild(op);
     });
     var L = window.__CUSTOM_FONTS || [];
     if(L.length){
@@ -8618,10 +8858,14 @@ $("bmExportModeSeg").addEventListener("click", function(e){
         op.value = "custom:" + f.name; op.textContent = f.name;
         og.appendChild(op);
       });
-      elFontSel.appendChild(og);
+      sel.appendChild(og);
     }
-    elFontSel.value = cur;
-    if(elFontSel.value !== cur) elFontSel.value = "";   // 原选字体已不在列表（被删/未导入）→ 回退默认
+    sel.value = cur;
+    if(sel.value !== cur) sel.value = "";   // 原选字体已不在列表（被删/未导入）→ 回退默认
+  }
+  function refreshDtFontSel(){
+    buildFontSel(elFontSel, "默认（跟随票面）");
+    buildFontSel(elRunsFontSel, "默认（跟随模块）");   // V6.2.5：选区字体下拉同步刷新
   }
   window.__refreshDtFontSel = refreshDtFontSel;
   refreshDtFontSel();
@@ -8646,6 +8890,137 @@ $("bmExportModeSeg").addEventListener("click", function(e){
     rd.onerror = function(){ alert("字体文件读取失败，请重试。"); };
     rd.readAsArrayBuffer(f);
   });
+
+  /* ---------- V6.2.5：选区级字体 / 字号 ----------
+     交互约定：锁定文字模块后，「选区」文本框列出该模块实际绘制的全部文字（window.__modTexts，
+     按绘制顺序拼接）；在框内划选（拖黑 / Shift+方向键）→ 设置「选区字体」或「选区字号」
+     → 仅选中字符被覆盖（adj.runs），即时重绘预览并随载荷持久化；
+     「清除选区设置」移除选区内所有覆盖，恢复模块默认。qr / 虚线框 / 多选 / 无文字模块隐藏本组。 */
+  var lastRunSel = null;    // 最近一次有效划选 [s,e)——拖选区字号滑块期间文本框失焦仍可继续调节
+  var prevRunsTxt = null;   // 上次写入文本框的模块文字（内容变化才重建，避免误清划选）
+  var runsHintT = null;
+
+  function runsTxtOf(key){
+    return (window.__modTexts && window.__modTexts[key]) || "";
+  }
+  function curRunSel(){
+    if(!elRunsTxt) return null;
+    var s = elRunsTxt.selectionStart, e = elRunsTxt.selectionEnd;
+    if(typeof s !== "number" || typeof e !== "number" || e <= s) return null;
+    return [s, e];
+  }
+  // 写入选区覆盖：patch {font:...} / {size:...}（hasOwnProperty 语义，未提供=重置该属性）；
+  // 空 patch = 清除选区内所有覆盖。与旧 run 相交的部分被切分保留，区间互不重叠。
+  function setRunRange(a, s, e, patch){
+    var hasFont = patch && Object.prototype.hasOwnProperty.call(patch, "font");
+    var hasSize = patch && Object.prototype.hasOwnProperty.call(patch, "size");
+    var base = (hasFont || hasSize) ? firstRunIn(a, s, e) : null;   // 清除操作不继承；增量设置时另一字段继承既有 run
+    var f0 = hasFont ? patch.font : ((base && base.font) || "");
+    var z0 = hasSize ? patch.size : ((base && base.size) || 100);
+    var runs = (a.runs && a.runs.length) ? a.runs.slice() : [];
+    var kept = [];
+    for(var i = 0; i < runs.length; i++){
+      var r = runs[i];
+      if(r.e <= s || r.s >= e){ kept.push(r); continue; }   // 不相交：原样保留
+      if(r.s < s) kept.push({ s: r.s, e: s, font: r.font, size: r.size });
+      if(r.e > e) kept.push({ s: e, e: r.e, font: r.font, size: r.size });
+    }
+    var nr = { s: s, e: e, font: f0, size: z0 };
+    if(nr.font || (nr.size && nr.size !== 100)) kept.push(nr);   // 全默认 run 不落库
+    kept.sort(function(x, y){ return x.s - y.s || x.e - y.e; });
+    a.runs = kept;
+    if(!a.runs.length) delete a.runs;
+  }
+  function firstRunIn(a, s, e){
+    var rs = a && a.runs;
+    if(!rs) return null;
+    for(var i = 0; i < rs.length; i++){ if(rs[i].s < e && rs[i].e > s) return rs[i]; }
+    return null;
+  }
+  function syncRunControls(){
+    if(!selKey || !elRunsFontSel) return;
+    var a = adjOf(selKey);
+    var sel = curRunSel() || lastRunSel;
+    var r = sel ? firstRunIn(a, sel[0], sel[1]) : null;
+    elRunsFontSel.value = (r && r.font) || "";
+    var sz = (r && r.size) || 100;
+    elRunsSize.value = sz;
+    elRunsSizeVal.textContent = sz + "%";
+    if(elRunsHint){
+      clearTimeout(runsHintT);
+      elRunsHint.classList.remove("warn");
+      if(sel){
+        elRunsHint.textContent = "已选 " + (sel[1] - sel[0]) + " 字 · 设置仅作用于选区";
+        elRunsHint.classList.add("on");
+      } else {
+        elRunsHint.textContent = "先在「选区」框划选要单独设置的文字";
+        elRunsHint.classList.remove("on");
+      }
+    }
+  }
+  function flashRunsHint(){
+    if(!elRunsHint) return;
+    clearTimeout(runsHintT);
+    elRunsHint.textContent = "请先在「选区」框划选文字（拖黑选中）";
+    elRunsHint.classList.add("warn");
+    elRunsHint.classList.remove("on");
+    runsHintT = setTimeout(syncRunControls, 1800);
+  }
+  function refreshRunsUI(){
+    var txt = selKey ? runsTxtOf(selKey) : "";
+    var isQr = selKey === "qr", isDash = selKey === "dashbox";
+    var show = !!selKey && !isQr && !isDash && !!txt && selMulti.length <= 1;
+    [elRunsTxtRow, elRunsFontRow, elRunsSizeRow, elRunsOpsRow].forEach(function(el){
+      if(el) el.style.display = show ? "" : "none";
+    });
+    if(!show){
+      lastRunSel = null;
+      prevRunsTxt = null;
+      return;
+    }
+    if(txt !== prevRunsTxt){
+      elRunsTxt.value = txt;   // 模块文字变化（切换模块/字段变更）→ 重建并作废旧划选
+      lastRunSel = null;
+      prevRunsTxt = txt;
+    }
+    syncRunControls();
+  }
+  // 划选事件：select（键盘/程序选择）、mouseup / touchend（拖黑）、keyup（Shift+方向键）
+  ["select", "mouseup", "touchend", "keyup"].forEach(function(ev){
+    elRunsTxt.addEventListener(ev, function(){
+      lastRunSel = curRunSel();   // 点选（塌陷）= null → 设置控件回到待划选提示
+      syncRunControls();
+    });
+  });
+  elRunsFontSel.addEventListener("change", function(){
+    var sel = curRunSel() || lastRunSel;
+    if(!selKey || !sel){ this.value = ""; flashRunsHint(); return; }
+    lastRunSel = sel;
+    var v = this.value;
+    apply(selKey, function(a){ setRunRange(a, sel[0], sel[1], { font: v }); });
+  });
+  elRunsSize.addEventListener("input", function(){
+    var v = Number(elRunsSize.value);
+    elRunsSizeVal.textContent = v + "%";
+    var sel = curRunSel() || lastRunSel;
+    if(!selKey || !sel){ flashRunsHint(); return; }
+    lastRunSel = sel;
+    apply(selKey, function(a){ setRunRange(a, sel[0], sel[1], { size: v }); });
+  });
+  elRunsClear.addEventListener("click", function(){
+    var sel = curRunSel() || lastRunSel;
+    if(!selKey || !sel){ flashRunsHint(); return; }
+    lastRunSel = sel;
+    apply(selKey, function(a){ setRunRange(a, sel[0], sel[1], {}); });
+  });
+  // 调试钩子（测试用）
+  window.__dtRunsState = function(){
+    return { sel: lastRunSel, txt: selKey ? runsTxtOf(selKey) : "",
+             runs: (selKey && window.__MODULE_ADJ[ticketType] && window.__MODULE_ADJ[ticketType][selKey] && window.__MODULE_ADJ[ticketType][selKey].runs) || null };
+  };
+  window.__dtApplyRuns = function(key, s, e, patch){
+    apply(key, function(a){ setRunRange(a, s, e, patch || {}); });
+  };
 
   // ---- 重置 ----
   btnResetMod.addEventListener("click", function(){
