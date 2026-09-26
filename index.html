@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.7</title>
+<title>12306火车票票根编辑器V6.2.8</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -2558,8 +2558,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.7</h1>
-        <p>阿杰同学 · V6.2.7 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.8</h1>
+        <p>阿杰同学 · V6.2.8 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2821,8 +2821,8 @@ window.__exportProgress = (function(){
               <select id="infoline2" data-page-node-id="LuYS316GMi0DykTVo5UjPL">
                 <option value="0" data-page-node-id="Pfh3kwPsA1eXO3JhWXzB4I">仅供报销使用</option>
                 <option value="1" data-page-node-id="5MriIKOhQhjG4pIP43bLxd">--</option>
-                <!-- V6.2.7：仅供纪念使用 —— 纪念专用选项（独立标识：票面叠加斜向纪念水印），与常规报销选项用途不同 -->
-                <option value="2" title="纪念用途：票面印出「仅供纪念使用」并叠加斜向纪念水印（导出图片同样携带），不具备乘车效力，与「仅供报销使用」等常规选项用途不同">仅供纪念使用</option>
+                <!-- V6.2.7/V6.2.8：仅供纪念使用 —— 纪念专用选项（V6.2.8 起仅印出文字，不再叠加水印），与常规报销选项用途不同 -->
+                <option value="2" title="纪念用途：票面印出「仅供纪念使用」，不具备乘车效力，与「仅供报销使用」等常规选项用途不同">仅供纪念使用</option>
               </select>
             </div>
             <div class="form-group wide" data-page-node-id="UKEqXoDWuQ2QmSwxZ7dNqW">
@@ -4024,38 +4024,8 @@ qrImg.onload = function(){
         ctx.drawImage(qrImg, p[0], p[1], p[2], p[2]);
         window.__recModBox("qr", p[0], p[1], p[0] + p[2], p[1] + p[2]);
         window.__qrPainted = true;   // V5.9：异步补绘完成，画布上的二维码已就绪
-        drawMemoMark();   // V6.2.7：二维码补绘会覆盖水印区域，选中纪念选项时立即补画
     }catch(e){}
 };
-
-// V6.2.7：仅供纪念使用 —— 票面斜向纪念水印（由「附加信息 2」的「仅供纪念使用」选项驱动）。
-// 用原型原始 fillText 绘制（绕过 ctx 实例补丁）：不进入模块作用域、不登记选区文字、
-// 不受字体方案（中/英/数字槽位）与模块字号缩放影响，任何开启状态下水印样式恒定。
-function drawMemoMark(){
-    var i2 = document.getElementById("infoline2");
-    if(!i2 || i2.value !== "2") return;   // 仅选中「仅供纪念使用」时叠加
-    var cw = ctx.canvas.width, ch = ctx.canvas.height;
-    var pf = CanvasRenderingContext2D.prototype.fillText;
-    ctx.save();
-    ctx.globalAlpha = 0.15;
-    ctx.fillStyle = "#1B2733";
-    ctx.font = "700 30px -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    var ang = -22 * Math.PI / 180;
-    var stepX = 250, stepY = 115;
-    var diag = Math.ceil(Math.sqrt(cw * cw + ch * ch));
-    ctx.translate(cw / 2, ch / 2);
-    ctx.rotate(ang);
-    var row = 0;
-    for(var yy = -diag / 2; yy <= diag / 2; yy += stepY, row++){
-        var offs = (row % 2) ? stepX / 2 : 0;
-        for(var xx = -diag / 2; xx <= diag / 2; xx += stepX){
-            pf.call(ctx, "仅供纪念使用", xx + offs, yy);
-        }
-    }
-    ctx.restore();
-}
 
 // V5.9：导出统一等待——二维码图片就绪（src 与缓存一致且解码可用）且画布已绘制
 // （drawQR 延时回贴 / onload 异步补绘二者之一完成）后再执行导出回调；
@@ -4490,7 +4460,7 @@ function redraw(){
     const infoline2Map = [
         "仅供报销使用",
         "",
-        "仅供纪念使用"   // V6.2.7：纪念专用选项，选中时票面印出该文字并叠加纪念水印
+        "仅供纪念使用"   // V6.2.7/V6.2.8：纪念专用选项，选中时票面印出该文字（V6.2.8 起无水印）
     ];
     y += 35;
     setModule("info2");
@@ -4538,7 +4508,6 @@ function redraw(){
                 && window.__qrCache.url && qrImg.src === window.__qrCache.url) {
                 window.__qrPainted = true;
             }
-            drawMemoMark();   // V6.2.7：二维码回贴覆盖水印区域，选中纪念选项时补画
         }, 100);
     };
     drawQR();
@@ -4588,8 +4557,6 @@ function redraw(){
         ctx.fillText(Q("#ticketMachineId").value,  x+dx,  y+dy2+(adj.machDy||0));
     }
     setModule(null);
-
-    drawMemoMark();   // V6.2.7：仅供纪念使用水印（附加信息二选中纪念选项时覆盖全票面；二维码回贴回调内会再次补画）
 
     saveInfo();
 }
@@ -8340,6 +8307,10 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.8</b><span>2026-09-27</span></div>
+      <ul>
+        <li><b>调整</b> <b>移除「仅供纪念使用」纪念水印</b>：应用户要求去掉票面斜向「仅供纪念使用」平铺水印——「附加信息 2」的「仅供纪念使用」选项<b>完整保留</b>，选中后票面附加信息位置照常印出该文字，选项悬停说明同步更新；其余功能（选项持久化、PDF 导入 / OCR 识别映射、导出流程）均不受影响。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.7</b><span>2026-09-27</span></div>
       <ul>
         <li><b>新增</b> <b>「仅供纪念使用」选项（附加信息 2）</b>：「附加信息 2」下拉新增纪念专用选项——选中后票面附加信息位置印出「仅供纪念使用」文字，并<b>叠加斜向「仅供纪念使用」纪念水印</b>作为独立标识（导出图片 / 批量 ZIP 同样携带），水印半透明平铺、不遮挡票面信息与二维码识别；选项自带悬停功能说明（纪念用途、不具备乘车效力，与「仅供报销使用」等常规选项用途不同）；选择结果随分享链接 / 刷新持久化，旧链接自动保持原有选项。</li>
