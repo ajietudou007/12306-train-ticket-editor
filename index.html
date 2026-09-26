@@ -4,7 +4,7 @@
 <meta charset="UTF-8" data-page-node-id="CjkrviUJPAkdXF4i8JPl06">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="NGBrsvTEfHpCD6XbJuUKRc">
 <meta name="color-scheme" content="dark light" data-page-node-id="KYOFT7PZrgZdipkRnyCEkc">
-<title>12306火车票票根编辑器V6.2.5</title>
+<title>12306火车票票根编辑器V6.2.6</title>
 <style>
 /* ==========================================================================
    12306 火车票票根编辑器 V4.9.2 · 铁路信号台（Railway Signal Desk）
@@ -975,6 +975,35 @@ body::after {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* V6.2.6：票面字体方案（中 / 英 / 数字三下拉，相互独立） */
+.font-scheme-ctrl { gap: 6px; }
+.scheme-sel {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 108px;
+  height: 26px;
+  padding: 0 20px 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #28343F);
+  background-color: var(--surface2, #1A232E);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 13px) calc(50% + 1px), calc(100% - 9px) calc(50% + 1px);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  color: var(--text-dim, rgba(190,201,213,.66));
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scheme-sel:hover { border-color: var(--border-focus, #F5A623); color: var(--accent-text, #FFB63D); }
+.scheme-sel:focus { outline: none; border-color: var(--accent, #F5A623); }
+.scheme-sel option { background: var(--surface, #141C25); color: var(--text, rgba(233,239,246,.92)); }
 .font-ctrl input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -2529,8 +2558,8 @@ window.__exportProgress = (function(){
         </svg>
       </div>
       <div class="brand-text">
-        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.5</h1>
-        <p>阿杰同学 · V6.2.5 · 12306 Train Ticket Stub Editor</p>
+        <h1 data-page-node-id="DBHGjf4ZRGhGFQAWmaiM5b">12306火车票票根编辑器V6.2.6</h1>
+        <p>阿杰同学 · V6.2.6 · 12306 Train Ticket Stub Editor</p>
       </div>
     </div>
     <div class="topbar-tools">
@@ -2592,6 +2621,19 @@ window.__exportProgress = (function(){
             <label class="font-ctrl" title="调整车票文字粗细">
               <span class="font-ctrl-label">粗细 <b id="fontWeightVal">600</b></span>
               <input type="range" id="fontWeightRange" min="400" max="800" value="600" step="50">
+            </label>
+            <!-- V6.2.6：票面字体方案 —— 中文 / 英文 / 数字三类字体相互独立，可单独自定义或恢复系统默认 -->
+            <label class="font-ctrl font-scheme-ctrl" title="设置票面中文文字字体（系统默认 = 恢复票面基准字体）">
+              <span class="font-ctrl-label">中文</span>
+              <select class="scheme-sel" id="schemeFontZh" aria-label="票面中文字体"></select>
+            </label>
+            <label class="font-ctrl font-scheme-ctrl" title="设置票面英文文字字体（系统默认 = 恢复票面基准字体）">
+              <span class="font-ctrl-label">英文</span>
+              <select class="scheme-sel" id="schemeFontEn" aria-label="票面英文字体"></select>
+            </label>
+            <label class="font-ctrl font-scheme-ctrl" title="设置票面数字字体（系统默认 = 恢复票面基准字体）">
+              <span class="font-ctrl-label">数字</span>
+              <select class="scheme-sel" id="schemeFontNum" aria-label="票面数字字体"></select>
             </label>
             <!-- V5.3：细节调整入口 —— 点选票面模块，单独调节位置 / 字号 / 字间距 / 粗细 -->
             <button class="btn dt-open-btn" id="detailAdjBtn" type="button" title="打开细节调整悬浮窗：点选票面模块，单独调节位置 / 字号 / 字间距 / 粗细">
@@ -3118,10 +3160,41 @@ const ctx = canvas.getContext("2d");
 // 预览车票文本的字重与字号缩放（由预览区滑块实时调节，绘制与导出共用，保证一致）
 window.__ticketFontWeight = 600;   // 字重：400（常规）～ 800（加粗）
 window.__ticketFontScale  = 1.0;   // 字号缩放：默认 1.0（原尺寸）
+
+/* ---------- V6.2.6：票面字体方案 ----------
+   专用票库字体 = 绘制层原硬编码基线字体栈（Times New Roman / Arial，canvas 内置字体栈、非外部字体文件），
+   统一替换为系统默认字体栈；中文 / 英文 / 数字三类槽位相互独立，可各自自定义或恢复系统默认（""）。 */
+window.__TICKET_SYS_FONT = "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Arial, sans-serif";
+window.__TICKET_FONT_SCHEME = { zh: "", en: "", num: "" };   // 各槽位 "" = 系统默认；key = FONT_OPTIONS 内置或 custom:名字
+function normalizeTicketFamily(family){
+    // 仅替换票面基准字体；细节调整 / 字体方案中用户显式选择的字体不在此列（其后级覆盖）
+    if(family === "Times New Roman" || family === "Arial") return window.__TICKET_SYS_FONT;
+    return family;
+}
+function schemeActive(){
+    var sc = window.__TICKET_FONT_SCHEME;
+    return !!(sc && (sc.zh || sc.en || sc.num));
+}
+window.__schemeActive = schemeActive;
+var _CJK_RE = /[\u3000-\u303F\u2E80-\u9FFF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/;
+// 单字符 → 类别字体（数字 / 英文 / 中文），槽位为空或未命中类别时回退基准字体
+function catFamily(ch, baseFamily){
+    if(!ch) return baseFamily;
+    var sc = window.__TICKET_FONT_SCHEME || {};
+    var key = null;
+    if(/[0-9]/.test(ch)) key = "num";
+    else if(/[A-Za-z]/.test(ch)) key = "en";
+    else if(_CJK_RE.test(ch)) key = "zh";
+    if(!key || !sc[key]) return baseFamily;
+    var f = fontFamilyOf(sc[key]);
+    return f || baseFamily;
+}
+window.__catFamily = catFamily;
+
 function setFont(sizePx, family){
     const w = window.__ticketFontWeight;
     const s = window.__ticketFontScale;
-    ctx.font = w + " " + (sizePx * s) + "px " + family;
+    ctx.font = w + " " + (sizePx * s) + "px " + normalizeTicketFamily(family);
 }
 
 const stationsNamePY = {};
@@ -3500,6 +3573,7 @@ window.__isValidFontKey = isValidFontKey;
         if(ff.load){
             ff.load().then(function(){
                 if(window.__refreshDtFontSel) window.__refreshDtFontSel();
+                if(window.__refreshSchemeSels) window.__refreshSchemeSels();   // V6.2.6：字体方案下拉同步新自定义字体
                 if(window.redraw) redraw();
             }).catch(function(){});
         }
@@ -3640,6 +3714,8 @@ function setModule(key){
 
     // setFont 包装：模块作用域内应用字号缩放、字重与模块字体，并记录生效字号
     setFont = function(sizePx, family){
+        family = normalizeTicketFamily(family);   // V6.2.6：票面基准字体 → 系统默认（用户显式选择的字体在其后覆盖，不受影响）
+        window.__fontStamp = (window.__fontStamp || 0) + 1;   // V6.2.6：逻辑字体状态戳——measureText 段间推进据此识别「刚绘制、未再 setFont」的文本
         var w = window.__ticketFontWeight;
         var s = window.__ticketFontScale;
         var m = window.__curModule;
@@ -3656,10 +3732,12 @@ function setModule(key){
         ctx.font = w + " " + (sizePx * s) + "px " + family;
     };
 
-    /* ---------- V6.2.5：选区级字体 / 字号（runs）---------- */
-    /* adj.runs = [{s,e,font,size}]：字符区间 [s,e) 单独覆盖模块字体（font key，可空=仅字号）
+    /* ---------- V6.2.5：选区级字体 / 字号（runs） + V6.2.6：类别字体槽位 ----------
+       adj.runs = [{s,e,font,size}]：字符区间 [s,e) 单独覆盖模块字体（font key，可空=仅字号）
        与字号缩放（size%，相对模块字号）。区间互不重叠、按 s 升序（setRunRange 写入时保证）。
-       绘制时按 runs 切分文本逐字符设置字体；无 runs 时全部路径与 V6.2.4 逐字节一致。 */
+       V6.2.6 起，任一类别槽位（window.__TICKET_FONT_SCHEME 中/英/数字）非空时同样进入逐字符
+       绘制路径，生效字体优先级：选区 run.font > 类别槽位 > 模块字体 / 票面基准（系统默认栈）。
+       绘制时逐字符设置生效字体；方案全空且无 runs 时，全部路径与 V6.2.4 逐字节一致。 */
     function runOf(adj, i){
         var rs = adj && adj.runs;
         if(!rs) return null;
@@ -3673,15 +3751,17 @@ function setModule(key){
         var spec = window.__curFontSpec || { px: 24, s: 1 };
         return spec.px * (spec.s || 1) * (((r && r.size) ? r.size : 100) / 100);
     }
-    function runFamily(r, baseFamily){
-        if(!r || !r.font) return baseFamily;
-        var f = fontFamilyOf(r.font);
-        return f || baseFamily;   // 未知 key（分享链接带入但本机未导入）回退模块字体
+    function runFamily(r, ch, baseFamily){
+        if(r && r.font){   // 优先级：选区字体 > 类别槽位（V6.2.6） > 基准字体
+            var f = fontFamilyOf(r.font);
+            if(f) return f;   // 未知 key（分享链接带入但本机未导入）回退类别槽位 / 基准
+        }
+        return catFamily(ch, baseFamily);   // V6.2.6：中 / 英 / 数字槽位（空槽位回退基准）
     }
-    function setRunFont(adj, i){
+    function setRunFont(adj, i, ch){
         var r = runOf(adj, i);
         var spec = window.__curFontSpec || { px: 24, s: 1, w: 400, family: "sans-serif" };
-        ctx.font = spec.w + " " + runPx(r) + "px " + runFamily(r, spec.family);
+        ctx.font = spec.w + " " + runPx(r) + "px " + runFamily(r, ch, spec.family);
         return r;
     }
     function restoreBaseFont(){
@@ -3705,11 +3785,11 @@ function setModule(key){
         window.__modTexts[m.key] = (window.__modTexts[m.key] || "") + text;
         window.__modTextOff[m.key] = __off;
         var a = m.adj, dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0, ls = a ? (a.ls || 0) : 0;
-        if(a && a.runs && a.runs.length && text.length){
-            // V6.2.5：选区级字体/字号——逐字符按所属 run 设置字体绘制；ls>0 时保留手动字间距
+        if(((a && a.runs && a.runs.length) || schemeActive()) && text.length){
+            // V6.2.5/V6.2.6：选区字体 / 类别字体槽位——逐字符设置生效字体绘制；ls>0 时保留手动字间距
             var chars = text.split("");
             var widths = chars.map(function(c, i){
-                setRunFont(a, __off + i);
+                setRunFont(a, __off + i, c);
                 return _measure.call(ctx, c).width;
             });
             var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
@@ -3721,14 +3801,14 @@ function setModule(key){
             else if(ctx.textAlign === "right") startX = x + dx - total;
             var cx = startX;
             for(var i = 0; i < chars.length; i++){
-                setRunFont(a, __off + i);
+                setRunFont(a, __off + i, chars[i]);
                 _fillText.call(ctx, chars[i], cx, y + dy);
                 if(window.__dtRunLog) window.__dtRunLog.push({ mod: m.key, gi: __off + i, ch: chars[i], font: ctx.font, px: runPx(runOf(a, __off + i)) });
                 cx += widths[i] + ls;
             }
             restoreBaseFont();
             recRunsBox(m.key, startX, y + dy, total, maxPx);
-            window.__lastRunW = { text: text, sumW: sumW };   // 段间推进（ctx.measureText）取选区字体下的宽度
+            window.__lastRunW = { text: text, sumW: sumW, stamp: window.__fontStamp };   // 段间推进（ctx.measureText）取选区/类别字体下的实际宽度
             return;
         }
         if(!ls){
@@ -3765,11 +3845,11 @@ function setModule(key){
         }
         var a = m ? m.adj : null;
         var dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0, sp = spacing + (a ? (a.ls || 0) : 0);
-        if(a && a.runs && a.runs.length && text.length){
-            // V6.2.5：选区级字体/字号 + 固定字间距——逐字符按所属 run 设置字体
+        if(((a && a.runs && a.runs.length) || schemeActive()) && text.length){
+            // V6.2.5/V6.2.6：选区字体 / 类别字体槽位 + 固定字间距——逐字符设置生效字体
             var chars = text.split("");
             var widths = chars.map(function(c, i){
-                setRunFont(a, __off + i);
+                setRunFont(a, __off + i, c);
                 return _measure.call(ctx, c).width;
             });
             var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
@@ -3777,13 +3857,13 @@ function setModule(key){
             for(var p = 0; p < chars.length; p++){ var pp = runPx(runOf(a, __off + p)); if(pp > maxPx) maxPx = pp; }
             var cx = x + dx;
             for(var i = 0; i < chars.length; i++){
-                setRunFont(a, __off + i);
+                setRunFont(a, __off + i, chars[i]);
                 _fillText.call(ctx, chars[i], cx, y + dy);
                 cx += widths[i] + sp;
             }
             restoreBaseFont();
             recBox(m.key, x + dx, y + dy - maxPx * 0.78, cx - sp, y + dy + maxPx * 0.78);
-            window.__lastRunW = { text: text, sumW: sumW };
+            window.__lastRunW = { text: text, sumW: sumW, stamp: window.__fontStamp };
             return;
         }
         if(sp === 0){
@@ -3812,22 +3892,22 @@ function setModule(key){
         var ls = a ? (a.ls || 0) : 0;
         var dx = a ? (a.dx || 0) : 0, dy = a ? (a.dy || 0) : 0;
         var shrink = ls * Math.max(0, text.length - 1);
-        if(a && a.runs && a.runs.length && text.length){
-            // V6.2.5：选区级字体/字号 + 两端撑满——逐字符按所属 run 的字体测宽后均匀分布
+        if(((a && a.runs && a.runs.length) || schemeActive()) && text.length){
+            // V6.2.5/V6.2.6：选区字体 / 类别字体槽位 + 两端撑满——逐字符按生效字体测宽后均匀分布
             var chars = text.split("");
             var widths = chars.map(function(c, i){
-                setRunFont(a, __off + i);
+                setRunFont(a, __off + i, c);
                 return _measure.call(ctx, c).width;
             });
             var sumW = widths.reduce(function(s2, w2){ return s2 + w2; }, 0);
             var maxPx = 0;
             for(var p = 0; p < chars.length; p++){ var pp = runPx(runOf(a, __off + p)); if(pp > maxPx) maxPx = pp; }
-            window.__lastRunW = { text: text, sumW: sumW };
+            window.__lastRunW = { text: text, sumW: sumW, stamp: window.__fontStamp };
             if(sumW > totalWidth - shrink || chars.length <= 1){
                 // 自然宽度超出可用宽度：退化为按选区字体顺序绘制
                 var cx0 = x + dx;
                 for(var i = 0; i < chars.length; i++){
-                    setRunFont(a, __off + i);
+                    setRunFont(a, __off + i, chars[i]);
                     _fillText.call(ctx, chars[i], cx0, y + dy);
                     cx0 += widths[i] + ls;
                 }
@@ -3838,7 +3918,7 @@ function setModule(key){
             var gap = (totalWidth - sumW) / (chars.length - 1) + ls;
             var cx = x + dx;
             for(var j = 0; j < chars.length; j++){
-                setRunFont(a, __off + j);
+                setRunFont(a, __off + j, chars[j]);
                 _fillText.call(ctx, chars[j], cx, y + dy);
                 cx += widths[j] + gap;
             }
@@ -3897,7 +3977,9 @@ function setModule(key){
             // V6.2.5：模块代码段间推进用的 measureText——若查询的正是刚按选区字体绘制过的文本，
             // 返回选区字体下的实际自然宽度（+ls×字符数，与下方 ls 补丁约定一致），混排后段间不错位
             var st = window.__lastRunW;
-            if(st && st.text === t){
+            if(st && st.text === t && st.stamp === window.__fontStamp){
+                // stamp 守卫（V6.2.6）：仅在「绘制后未再 setFont」时生效——后续布局测量（如
+                // endZhanRightEdge 测「站」、拼音定位测站名）不得误取旧字体宽度
                 var lsw = (m.adj && m.adj.ls) ? m.adj.ls * t.length : 0;
                 return Object.create(r, { width: { value: st.sumW + lsw, configurable: true } });
             }
@@ -4612,6 +4694,7 @@ function saveInfo() {
             v: 1, active: true,
             index: batch.index,
             uiIndex: (typeof batch.uiIndex === "number") ? batch.uiIndex : batch.index,
+            fsc: (function(){ var s0 = window.__TICKET_FONT_SCHEME || {}; return { zh: s0.zh || "", en: s0.en || "", num: s0.num || "" }; })(),   // V6.2.6：票面字体方案随载荷持久化
             adj: window.__sanitizeModAdj(window.__MODULE_ADJ),   // V5.3：模块细节调整随载荷持久化（按票种记忆，全行程共享，剔除全默认项）
             items: batch.items.map(function(it){
                 return { label: it.label || "", data: it.data, flags: it.flags, selects: it.selects };
@@ -4621,6 +4704,7 @@ function saveInfo() {
         // 未批量导入（手填单张）：以当前表单快照序列化，刷新后按单张恢复
         var snap = tripSnapshot();
         payload = { v: 1, active: false, index: 0, uiIndex: 0,
+            fsc: (function(){ var s0 = window.__TICKET_FONT_SCHEME || {}; return { zh: s0.zh || "", en: s0.en || "", num: s0.num || "" }; })(),   // V6.2.6：票面字体方案随载荷持久化
             adj: window.__sanitizeModAdj(window.__MODULE_ADJ),
             items: [{ label: "", data: snap.data, flags: snap.flags, selects: snap.selects }] };
     }
@@ -4660,6 +4744,14 @@ function loadInfo() {
                 var batch = window.__batch || (window.__batch = { items: [], index: 0, uiIndex: 0, active: false });
                 // V5.3：还原模块细节调整（旧载荷无 adj 字段时保持默认空表）
                 window.__MODULE_ADJ = window.__sanitizeModAdj(payload.adj);
+                // V6.2.6：还原票面字体方案（中 / 英 / 数字三槽位；旧载荷无 fsc 字段时保持系统默认）
+                if(payload.fsc && typeof payload.fsc === "object"){
+                    var sc0 = window.__TICKET_FONT_SCHEME;
+                    sc0.zh  = isValidFontKey(payload.fsc.zh)  ? payload.fsc.zh  : "";
+                    sc0.en  = isValidFontKey(payload.fsc.en)  ? payload.fsc.en  : "";
+                    sc0.num = isValidFontKey(payload.fsc.num) ? payload.fsc.num : "";
+                    if(window.__syncSchemeSels) window.__syncSchemeSels();
+                }
                 // 逐行程深拷贝重建：字段缺失退为空值，任意两程之间零共享引用
                 var rebuilt = payload.items.map(function(it, i){
                     var src = (it && typeof it === "object") ? it : {};
@@ -6347,6 +6439,52 @@ window.batchSaveAll = function(){
   }
   fsRange.addEventListener("input", apply);
   fwRange.addEventListener("input", apply);
+
+  // V6.2.6：票面字体方案（中 / 英 / 数字三下拉，相互独立；「系统默认」= 恢复票面基准字体）
+  var SCHEME_IDS = [["zh", "schemeFontZh"], ["en", "schemeFontEn"], ["num", "schemeFontNum"]];
+  function buildSchemeSels(){
+    SCHEME_IDS.forEach(function(pair){
+      var sel = document.getElementById(pair[1]);
+      if(!sel) return;
+      sel.innerHTML = "";
+      var o0 = document.createElement("option");
+      o0.value = ""; o0.textContent = "系统默认";
+      sel.appendChild(o0);
+      FONT_OPTIONS.forEach(function(it){
+        if(!it[0]) return;   // 跳过空项（已用「系统默认」替代）
+        var o = document.createElement("option");
+        o.value = it[0]; o.textContent = it[1];
+        sel.appendChild(o);
+      });
+      var cg = document.createElement("optgroup");
+      cg.label = "自定义字体";
+      (window.__CUSTOM_FONTS || []).forEach(function(cf){
+        var o = document.createElement("option");
+        o.value = "custom:" + cf.name; o.textContent = cf.name;
+        cg.appendChild(o);
+      });
+      if(cg.children.length) sel.appendChild(cg);
+      sel.value = (window.__TICKET_FONT_SCHEME && window.__TICKET_FONT_SCHEME[pair[0]]) || "";
+    });
+  }
+  window.__refreshSchemeSels = function(){ buildSchemeSels(); };   // 重建选项（自定义字体增删后同步，保留当前选中值）
+  window.__syncSchemeSels = function(){                            // 仅同步选中值（loadInfo 还原后调用，不重建）
+    SCHEME_IDS.forEach(function(pair){
+      var sel = document.getElementById(pair[1]);
+      if(sel && window.__TICKET_FONT_SCHEME) sel.value = window.__TICKET_FONT_SCHEME[pair[0]] || "";
+    });
+  };
+  SCHEME_IDS.forEach(function(pair){
+    var sel = document.getElementById(pair[1]);
+    if(!sel) return;
+    sel.addEventListener("change", function(){
+      if(!window.__TICKET_FONT_SCHEME) return;
+      window.__TICKET_FONT_SCHEME[pair[0]] = sel.value;
+      if(typeof redraw === "function") redraw();
+      if(typeof saveInfo === "function") saveInfo();   // 方案随载荷持久化（300ms 防抖）
+    });
+  });
+  buildSchemeSels();
 })();
 </script>
 <script>
@@ -8166,6 +8304,12 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       <button class="cl-close" id="clClose" type="button" aria-label="关闭更新日志"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="cl-body">
+      <div class="cl-ver"><b>V6.2.6</b><span>2026-09-26</span></div>
+      <ul>
+        <li><b>调整</b> <b>票面基准字体替换为系统默认字体</b>：定位专用票库字体（绘制层硬编码的 Times New Roman / Arial 字体栈，为 canvas 内置字体、非外部字体文件），统一替换为各操作系统默认字体栈——票面文字在 Windows / macOS / 移动端均以系统默认字体呈现，中英文数字混排更协调，不再依赖特定衬线字体。</li>
+        <li><b>新增</b> <b>票面字体方案（中 / 英 / 数字独立设置）</b>：预览控制区新增「中文 / 英文 / 数字」三个字体下拉，三类文字可<b>分别指定字体（含自定义导入字体），相互独立、可单独自定义或一键恢复系统默认</b>；票面全部文本元素（站名、拼音、车次号、车厢座位、金额、日期时间等中英数字混排内容）按字符类别精确套用对应字体。</li>
+        <li><b>优化</b> 字体方案<b>随载荷自动保存</b>：三类字体设置随分享链接 / 刷新持久化（旧链接无该字段时自动保持系统默认），与选区级字体、模块字体兼容，生效优先级：<b>选区字体 &gt; 字体方案（中/英/数字） &gt; 票面基准（系统默认）</b>。</li>
+      </ul>
       <div class="cl-ver"><b>V6.2.5</b><span>2026-09-26</span></div>
       <ul>
         <li><b>新增</b> 细节调整<b>选区级字体 / 字号</b>：锁定文字模块后，控制面板新增「选区」文本框，列出该模块实际绘制的全部文字（多段文字按绘制顺序连续排列）——在框内<b>划选任意文字段落或字符</b>（拖黑或 Shift+方向键），即可对选中内容<b>单独设置字体（含自定义导入字体）与字号缩放（50%~200%）</b>，与整模块字体 / 字号设置互不覆盖、可任意叠加，同一模块内可混排多种字体字号（如车次号数字与「车」字各用不同字体）。</li>
@@ -8886,6 +9030,7 @@ $("bmExportModeSeg").addEventListener("click", function(e){
       var rec = window.__registerCustomFont(name, rd.result, true);
       if(!rec){ alert("该字体文件无法解析，请更换文件后重试。"); return; }
       refreshDtFontSel();
+      if(window.__refreshSchemeSels) window.__refreshSchemeSels();   // V6.2.6：字体方案下拉同步新自定义字体
     };
     rd.onerror = function(){ alert("字体文件读取失败，请重试。"); };
     rd.readAsArrayBuffer(f);
